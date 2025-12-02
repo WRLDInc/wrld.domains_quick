@@ -12,28 +12,26 @@ export function Header() {
     >
       <div className="container">
         <div className="header-content">
-          <Link href="/">
-            <a className="logo">
-              <motion.span
-                className="logo-text gradient-text"
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: 'spring', stiffness: 400 }}
-              >
-                WRLD
-              </motion.span>
-              <span className="logo-domain">.domains</span>
-            </a>
+          <Link href="/" className="logo">
+            <motion.span
+              className="logo-text gradient-text"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: 'spring', stiffness: 400 }}
+            >
+              WRLD
+            </motion.span>
+            <span className="logo-domain">.domains</span>
           </Link>
 
           <nav className="nav">
-            <Link href="/login">
-              <a className="nav-link">Login</a>
+            <Link href="/login" className="nav-link">
+              Login
             </Link>
-            <Link href="/register">
-              <a className="nav-link">Register</a>
+            <Link href="/register" className="nav-link">
+              Register
             </Link>
-            <Link href="/support">
-              <a className="nav-link">Support</a>
+            <Link href="/support" className="nav-link">
+              Support
             </Link>
             <ThemeToggle />
             <a
