@@ -89,8 +89,8 @@ export function DomainSearch() {
           </button>
         </div>
         <div className="tld-suggestions">
-          {POPULAR_TLDS.map((tld) => (
-            <button
+          {POPULAR_TLDS.map((tld, index) => (
+            <motion.button
               key={tld}
               type="button"
               className="tld-chip"
@@ -98,9 +98,14 @@ export function DomainSearch() {
                 const cleanTerm = searchTerm.replace(/\.[a-z]+$/i, '');
                 setSearchTerm(`${cleanTerm}${tld}`);
               }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + index * 0.05, type: 'spring', stiffness: 300 }}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.95 }}
             >
               {tld}
-            </button>
+            </motion.button>
           ))}
         </div>
       </motion.form>

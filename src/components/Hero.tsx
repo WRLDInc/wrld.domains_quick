@@ -20,7 +20,7 @@ export function Hero() {
           >
             Find Your Perfect
             <br />
-            <span className="gradient-text">Domain Name</span>
+            <span className="gradient-text animated-gradient">Domain Name</span>
           </motion.h1>
 
           <motion.p
@@ -40,18 +40,29 @@ export function Hero() {
             transition={{ delay: 0.6, duration: 0.7 }}
             className="hero-features"
           >
-            <div className="feature-item">
-              <span className="feature-icon">⚡</span>
-              <span className="feature-text">Instant Search</span>
-            </div>
-            <div className="feature-item">
-              <span className="feature-icon">🔒</span>
-              <span className="feature-text">Secure Registration</span>
-            </div>
-            <div className="feature-item">
-              <span className="feature-icon">💰</span>
-              <span className="feature-text">Competitive Pricing</span>
-            </div>
+            {[
+              { icon: '⚡', text: 'Instant Search' },
+              { icon: '🔒', text: 'Secure Registration' },
+              { icon: '💰', text: 'Competitive Pricing' }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.text}
+                className="feature-item"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + index * 0.1, type: 'spring', stiffness: 200 }}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              >
+                <motion.span
+                  className="feature-icon"
+                  animate={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ delay: 1 + index * 0.2, duration: 0.5 }}
+                >
+                  {feature.icon}
+                </motion.span>
+                <span className="feature-text">{feature.text}</span>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
       </div>
@@ -88,6 +99,22 @@ export function Hero() {
           letter-spacing: -0.03em;
         }
 
+        .animated-gradient {
+          background: linear-gradient(
+            90deg,
+            var(--color-primary),
+            var(--color-accent),
+            var(--color-primary-light),
+            var(--color-accent-light),
+            var(--color-primary)
+          );
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: gradient-shift 3s ease infinite;
+        }
+
         .hero-subtitle {
           font-size: clamp(1.125rem, 2vw, 1.375rem);
           color: var(--color-text-secondary);
@@ -108,11 +135,28 @@ export function Hero() {
           flex-direction: column;
           align-items: center;
           gap: 0.5rem;
+          padding: 1.5rem;
+          border-radius: 1rem;
+          background: var(--color-bg-card);
+          border: 1px solid var(--color-border);
+          cursor: pointer;
+          transition: all var(--transition-base);
+        }
+
+        .feature-item:hover {
+          border-color: var(--color-primary);
+          box-shadow: var(--shadow-lg), var(--glow-primary);
+          background: var(--color-bg-hover);
         }
 
         .feature-icon {
-          font-size: 2rem;
-          filter: grayscale(0.3);
+          font-size: 2.5rem;
+          filter: grayscale(0);
+          transition: transform var(--transition-base);
+        }
+
+        .feature-item:hover .feature-icon {
+          transform: scale(1.2);
         }
 
         .feature-text {

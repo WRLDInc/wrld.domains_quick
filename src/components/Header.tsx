@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   return (
@@ -13,7 +14,13 @@ export function Header() {
         <div className="header-content">
           <Link href="/">
             <a className="logo">
-              <span className="logo-text gradient-text">WRLD</span>
+              <motion.span
+                className="logo-text gradient-text"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
+                WRLD
+              </motion.span>
               <span className="logo-domain">.domains</span>
             </a>
           </Link>
@@ -28,6 +35,7 @@ export function Header() {
             <Link href="/support">
               <a className="nav-link">Support</a>
             </Link>
+            <ThemeToggle />
             <a
               href="https://wrld.host"
               className="nav-link-cta"
@@ -45,10 +53,17 @@ export function Header() {
           position: sticky;
           top: 0;
           z-index: 100;
-          background: var(--color-bg);
           border-bottom: 1px solid var(--color-border);
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px) saturate(180%);
+          background: var(--color-bg);
+        }
+
+        [data-theme="dark"] .header {
           background: rgba(10, 10, 10, 0.8);
+        }
+
+        [data-theme="light"] .header {
+          background: rgba(255, 255, 255, 0.8);
         }
 
         .header-content {

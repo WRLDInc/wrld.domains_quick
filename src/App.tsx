@@ -1,6 +1,7 @@
 import { Route, Switch } from 'wouter';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { HomePage } from '@/pages/Home';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
@@ -9,6 +10,7 @@ import { SupportPage } from '@/pages/Support';
 export function App() {
   return (
     <>
+      <AnimatedBackground />
       <Header />
       <main className="main-content">
         <Switch>
@@ -27,6 +29,8 @@ export function App() {
         .main-content {
           flex: 1;
           min-height: calc(100vh - 400px);
+          position: relative;
+          z-index: 1;
         }
       `}</style>
     </>
