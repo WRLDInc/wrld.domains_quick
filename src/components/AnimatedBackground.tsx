@@ -43,7 +43,7 @@ export function AnimatedBackground() {
     fpsLimit: 120,
     particles: {
       number: {
-        value: theme === 'dark' ? 40 : 30, // More particles in dark mode
+        value: theme === 'dark' ? 80 : 60, // Much more particles for visibility
         density: {
           enable: true,
           width: 800,
@@ -57,17 +57,17 @@ export function AnimatedBackground() {
         type: 'circle',
       },
       opacity: {
-        value: theme === 'dark' ? 0.8 : 0.6, // Higher opacity in dark mode
+        value: theme === 'dark' ? 1 : 0.8, // Maximum opacity for visibility
         random: true,
         animation: {
           enable: true,
           speed: 0.6,
-          minimumValue: theme === 'dark' ? 0.3 : 0.2,
+          minimumValue: theme === 'dark' ? 0.5 : 0.4, // Higher minimum
           sync: false,
         },
       },
       size: {
-        value: { min: 1, max: 3 },
+        value: { min: 2, max: 4 }, // Larger particles (was 1-3, now 2-4)
         random: true,
         animation: {
           enable: false,
@@ -77,8 +77,8 @@ export function AnimatedBackground() {
         enable: true,
         distance: 150,
         color: theme === 'dark' ? '#0ea5e9' : '#00adee', // Cyan lines
-        opacity: theme === 'dark' ? 0.5 : 0.4, // More visible in dark mode
-        width: 1,
+        opacity: theme === 'dark' ? 0.8 : 0.6, // Much more visible
+        width: 1.5, // Thicker lines
       },
       move: {
         enable: true,
@@ -115,13 +115,14 @@ export function AnimatedBackground() {
       },
       modes: {
         grab: {
-          distance: 200,
+          distance: 250, // Larger grab distance
           links: {
-            opacity: theme === 'dark' ? 0.7 : 0.5,
+            opacity: theme === 'dark' ? 1 : 0.8, // Maximum opacity on grab
+            color: theme === 'dark' ? '#38bdf8' : '#0ea5e9', // Brighter on hover
           },
         },
         push: {
-          quantity: 4,
+          quantity: 6, // More particles on click
         },
         repulse: {
           distance: 200,
