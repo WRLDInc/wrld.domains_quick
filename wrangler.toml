@@ -1,21 +1,5 @@
-name = "wrld-domains"
+# wrangler.toml
+name = 'wrld-domains-quicksite'
 compatibility_date = "2024-11-27"
 pages_build_output_dir = "dist"
 
-[observability]
-enabled = false
-head_sampling_rate = 1
-
-[observability.logs]
-enabled = true
-head_sampling_rate = 1
-persist = true
-invocation_logs = true
-
-[observability.traces]
-enabled = false
-persist = true
-head_sampling_rate = 1
-
-[[tail_consumers]]
-service = "wrld-domains-tail-worker"
