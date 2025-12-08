@@ -2,6 +2,17 @@ name = "wrld-domains"
 compatibility_date = "2024-11-27"
 pages_build_output_dir = "dist"
 
-# Custom domain (wrld.domains) configured via Cloudflare Pages dashboard
-# This project uses simplified WHMCS integration (direct form posts)
-# No API secrets needed - all auth/domain search handled by WHMCS directly
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
