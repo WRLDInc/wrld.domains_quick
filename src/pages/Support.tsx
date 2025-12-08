@@ -1,44 +1,7 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { openGleap, openHelpCenter } from '@/lib/gleap';
 
 export function SupportPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus(null);
-
-    try {
-      const response = await fetch('/api/support/ticket', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
-      });
-
-      const data = await response.json();
-
-      if (data.result === 'success') {
-        setSubmitStatus('success');
-        setName('');
-        setEmail('');
-        setSubject('');
-        setMessage('');
-      } else {
-        setSubmitStatus('error');
-      }
-    } catch (err) {
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="support-page">
       <div className="container">
@@ -53,145 +16,67 @@ export function SupportPage() {
           </div>
 
           <div className="support-grid">
-            <div className="support-form-section">
-              <h2>Submit a Ticket</h2>
-
-              {submitStatus === 'success' && (
-                <div className="success-message">
-                  Your ticket has been submitted successfully! We'll get back to you soon.
-                </div>
-              )}
-
-              {submitStatus === 'error' && (
-                <div className="error-message">
-                  Failed to submit ticket. Please try again or contact us directly.
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="support-form">
-                <div className="form-group">
-                  <label htmlFor="name" className="form-label">Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="form-input"
-                    placeholder="Your name"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email" className="form-label">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="form-input"
-                    placeholder="you@example.com"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="subject" className="form-label">Subject</label>
-                  <input
-                    id="subject"
-                    type="text"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    required
-                    className="form-input"
-                    placeholder="How can we help?"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="message" className="form-label">Message</label>
-                  <textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    required
-                    className="form-textarea"
-                    placeholder="Describe your issue or question..."
-                    rows={6}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="submit-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
+            <div className="support-options">
+              <motion.div
+                className="support-card primary"
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="card-icon">💬</div>
+                <h2>Live Chat</h2>
+                <p>Get instant help from our support team. Available 24/7.</p>
+                <button onClick={openGleap} className="support-button primary">
+                  Start Live Chat
                 </button>
-              </form>
+              </motion.div>
+
+              <motion.div
+                className="support-card"
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="card-icon">📚</div>
+                <h2>Help Center</h2>
+                <p>Browse our knowledge base for answers to common questions.</p>
+                <button onClick={openHelpCenter} className="support-button">
+                  Browse Help Center
+                </button>
+              </motion.div>
+
+              <motion.div
+                className="support-card"
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="card-icon">🎫</div>
+                <h2>Submit a Ticket</h2>
+                <p>Create a support ticket for detailed assistance.</p>
+                <a href="https://wrld.host/submitticket.php" className="support-button" target="_blank" rel="noopener noreferrer">
+                  Open Ticket
+                </a>
+              </motion.div>
+
+              <motion.div
+                className="support-card"
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="card-icon">👤</div>
+                <h2>Client Area</h2>
+                <p>Manage your services, domains, and billing.</p>
+                <a href="https://wrld.host/clientarea.php" className="support-button" target="_blank" rel="noopener noreferrer">
+                  Go to Client Area
+                </a>
+              </motion.div>
             </div>
 
-            <div className="support-info">
-              <div className="info-card">
-                <h3>Quick Links</h3>
-                <ul className="info-links">
-                  <li>
-                    <a href="https://wrld.host/knowledgebase.php" target="_blank" rel="noopener noreferrer">
-                      Knowledge Base
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://wrld.host/serverstatus.php" target="_blank" rel="noopener noreferrer">
-                      Network Status
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://wrld.host/announcements.php" target="_blank" rel="noopener noreferrer">
-                      Announcements
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://wrld.host/contact.php" target="_blank" rel="noopener noreferrer">
-                      Contact Information
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="info-card">
-                <h3>Existing Customers</h3>
-                <p>
-                  If you already have an account, you can manage your tickets
-                  through the client area.
-                </p>
-                <a
-                  href="https://wrld.host/clientarea.php"
-                  className="info-button"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Go to Client Area →
-                </a>
-              </div>
-
-              <div className="info-card">
-                <h3>Live Chat</h3>
-                <p>
-                  Need immediate assistance? Our live chat support is available 24/7.
-                </p>
-                <a
-                  href="https://wrld.host/submitticket.php"
-                  className="info-button"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Start Live Chat →
-                </a>
-              </div>
+            <div className="support-links">
+              <h3>Quick Links</h3>
+              <ul>
+                <li><a href="https://wrld.host/knowledgebase.php" target="_blank" rel="noopener noreferrer">Knowledge Base</a></li>
+                <li><a href="https://wrld.host/serverstatus.php" target="_blank" rel="noopener noreferrer">Network Status</a></li>
+                <li><a href="https://wrld.host/announcements.php" target="_blank" rel="noopener noreferrer">Announcements</a></li>
+              </ul>
             </div>
           </div>
         </motion.div>
@@ -220,157 +105,110 @@ export function SupportPage() {
         }
 
         .support-grid {
-          display: grid;
-          grid-template-columns: 1fr 400px;
+          display: flex;
+          flex-direction: column;
           gap: 3rem;
-          align-items: start;
         }
 
-        .support-form-section h2 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-bottom: 1.5rem;
-        }
-
-        .support-form {
-          display: flex;
-          flex-direction: column;
+        .support-options {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 1.5rem;
         }
 
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-label {
-          font-weight: 600;
-          font-size: 0.875rem;
-          color: var(--color-text-primary);
-        }
-
-        .form-input,
-        .form-textarea {
-          width: 100%;
-        }
-
-        .form-textarea {
-          resize: vertical;
-          min-height: 120px;
-          font-family: var(--font-sans);
-        }
-
-        .submit-button {
-          width: 100%;
-          padding: 1rem;
-          font-weight: 600;
-          border-radius: 0.5rem;
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          color: white;
-          transition: all var(--transition-base);
-        }
-
-        .submit-button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md), var(--glow-primary);
-        }
-
-        .submit-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .success-message {
-          padding: 1rem;
-          border-radius: 0.5rem;
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid var(--color-success);
-          color: var(--color-success);
-          margin-bottom: 1.5rem;
-          font-size: 0.875rem;
-        }
-
-        .error-message {
-          padding: 1rem;
-          border-radius: 0.5rem;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid var(--color-error);
-          color: var(--color-error);
-          margin-bottom: 1.5rem;
-          font-size: 0.875rem;
-        }
-
-        .support-info {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .info-card {
-          padding: 1.5rem;
+        .support-card {
+          padding: 2rem;
           background: var(--color-bg-card);
           border: 1px solid var(--color-border);
-          border-radius: 0.75rem;
+          border-radius: 1rem;
+          text-align: center;
+          cursor: pointer;
         }
 
-        .info-card h3 {
-          font-size: 1.125rem;
-          font-weight: 700;
+        .support-card.primary {
+          border-color: var(--color-primary);
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05));
+        }
+
+        .card-icon {
+          font-size: 2.5rem;
           margin-bottom: 1rem;
         }
 
-        .info-card p {
+        .support-card h2 {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin-bottom: 0.75rem;
+        }
+
+        .support-card p {
           color: var(--color-text-secondary);
           font-size: 0.875rem;
           line-height: 1.6;
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
         }
 
-        .info-links {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .info-links a {
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          transition: color var(--transition-fast);
-          display: block;
-        }
-
-        .info-links a:hover {
-          color: var(--color-primary);
-        }
-
-        .info-button {
+        .support-button {
           display: inline-block;
           padding: 0.75rem 1.5rem;
           font-weight: 600;
           font-size: 0.875rem;
           border-radius: 0.5rem;
           background: var(--color-bg-elevated);
-          color: var(--color-primary);
+          color: var(--color-text-primary);
           border: 1px solid var(--color-border);
           transition: all var(--transition-base);
+          text-decoration: none;
         }
 
-        .info-button:hover {
+        .support-button:hover {
           background: var(--color-bg-hover);
           border-color: var(--color-primary);
-          transform: translateY(-2px);
+          color: var(--color-primary);
         }
 
-        @media (max-width: 1024px) {
-          .support-grid {
-            grid-template-columns: 1fr;
-          }
+        .support-button.primary {
+          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+          color: white;
+          border: none;
+        }
 
-          .support-info {
-            order: 2;
-          }
+        .support-button.primary:hover {
+          box-shadow: var(--shadow-md), var(--glow-primary);
+          color: white;
+        }
+
+        .support-links {
+          padding: 2rem;
+          background: var(--color-bg-card);
+          border: 1px solid var(--color-border);
+          border-radius: 1rem;
+          text-align: center;
+        }
+
+        .support-links h3 {
+          font-size: 1rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
+          color: var(--color-text-secondary);
+        }
+
+        .support-links ul {
+          list-style: none;
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 2rem;
+        }
+
+        .support-links a {
+          color: var(--color-text-secondary);
+          font-size: 0.875rem;
+          transition: color var(--transition-fast);
+        }
+
+        .support-links a:hover {
+          color: var(--color-primary);
         }
 
         @media (max-width: 768px) {
@@ -380,6 +218,11 @@ export function SupportPage() {
 
           .support-header {
             margin-bottom: 2rem;
+          }
+
+          .support-links ul {
+            flex-direction: column;
+            gap: 1rem;
           }
         }
       `}</style>

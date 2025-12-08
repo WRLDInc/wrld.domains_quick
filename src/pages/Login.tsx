@@ -1,38 +1,6 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.result === 'success') {
-        window.location.href = 'https://wrld.host/clientarea.php';
-      } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
-      }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="auth-page">
       <div className="container">
@@ -46,22 +14,17 @@ export function LoginPage() {
           </h1>
           <p className="auth-subtitle">Login to manage your domains and services</p>
 
-          {error && (
-            <div className="error-message">{error}</div>
-          )}
-
-          <form onSubmit={handleSubmit} className="auth-form">
+          {/* WHMCS Integration: Direct form submission to dologin.php */}
+          <form method="post" action="https://wrld.host/dologin.php" className="auth-form">
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email Address</label>
+              <label htmlFor="username" className="form-label">Email Address</label>
               <input
-                id="email"
+                id="username"
+                name="username"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="form-input"
                 placeholder="you@example.com"
-                disabled={isLoading}
               />
             </div>
 
@@ -69,22 +32,20 @@ export function LoginPage() {
               <label htmlFor="password" className="form-label">Password</label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="form-input"
                 placeholder="••••••••"
-                disabled={isLoading}
+                autoComplete="off"
               />
             </div>
 
             <button
               type="submit"
               className="submit-button"
-              disabled={isLoading}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              Login
             </button>
           </form>
 
@@ -131,16 +92,6 @@ export function LoginPage() {
           margin-bottom: 2rem;
         }
 
-        .error-message {
-          padding: 1rem;
-          border-radius: 0.5rem;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid var(--color-error);
-          color: var(--color-error);
-          margin-bottom: 1.5rem;
-          font-size: 0.875rem;
-        }
-
         .auth-form {
           display: flex;
           flex-direction: column;
@@ -174,14 +125,9 @@ export function LoginPage() {
           margin-top: 0.5rem;
         }
 
-        .submit-button:hover:not(:disabled) {
+        .submit-button:hover {
           transform: translateY(-2px);
           box-shadow: var(--shadow-md), var(--glow-primary);
-        }
-
-        .submit-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
         }
 
         .auth-footer {
