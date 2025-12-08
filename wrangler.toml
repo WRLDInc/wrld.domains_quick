@@ -2,26 +2,6 @@ name = "wrld-domains-quick"
 compatibility_date = "2024-11-27"
 pages_build_output_dir = "dist"
 
-[env.production]
-name = "wrld-domains-quick"
-route = "wrld.domains/*"
-
-[env.production.vars]
-ENVIRONMENT = "production"
-WHMCS_URL = "https://wrld.host"
-
-# Add these secrets via: wrangler secret put <SECRET_NAME>
-# - WHMCS_API_IDENTIFIER
-# - WHMCS_API_SECRET
-
-# KV Namespace for analytics
-[[kv_namespaces]]
-binding = "DOMAIN_ANALYTICS"
-id = "placeholder_id"
-preview_id = "placeholder_preview_id"
-
-# D1 Database for structured data (optional)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "wrld-domains-db"
-# database_id = "placeholder_id"
+# Custom domain (wrld.domains) configured via Cloudflare Pages dashboard
+# This project uses simplified WHMCS integration (direct form posts)
+# No API secrets needed - all auth/domain search handled by WHMCS directly
