@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { Route, Switch } from 'wouter';
-import Gleap from 'gleap';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
@@ -10,10 +8,6 @@ import { RegisterPage } from '@/pages/Register';
 import { SupportPage } from '@/pages/Support';
 
 export function App() {
-  useEffect(() => {
-    Gleap.initialize("GwUBVVrc0r6XgEthA41dwFXeev3mGB3p");
-  }, []);
-
   return (
     <>
       <AnimatedBackground />
