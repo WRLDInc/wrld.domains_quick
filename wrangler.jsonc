@@ -14,7 +14,7 @@
   // second Worker under this name, so keep them identical.
   // ---------------------------------------------------------------------------
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "wrld-domains",
+  "name": "wrld-domains-quick",
   "compatibility_date": "2026-09-01",
 
   // The Worker script only answers /api/*; everything else is an asset.
