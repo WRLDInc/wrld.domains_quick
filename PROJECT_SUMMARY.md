@@ -51,7 +51,7 @@
 - **Code splitting** for optimal load times
 - **CDN delivery** via Cloudflare
 - **Security headers** (_headers file)
-- **WWW to non-WWW redirects** (_redirects file)
+- **WWW to non-WWW redirects** (Cloudflare zone Redirect Rule)
 - **Meta tags** for SEO and social sharing
 - **Optimized assets** with aggressive caching
 
@@ -65,7 +65,7 @@
 - **CSS Custom Properties** for theming
 
 ### Backend Stack
-- **Cloudflare Pages** for static hosting
+- **Cloudflare Workers with Static Assets** for hosting; a small Worker script for `/api/*`
 - **Cloudflare Workers** for API endpoints
 - **Cloudflare KV** for analytics storage
 - **WHMCS API** integration
@@ -88,14 +88,13 @@ wrld.domains_quick/
 │   ├── styles/              # Global CSS with Texas-tech design
 │   ├── App.tsx              # Main app with routing
 │   └── main.tsx             # Entry point
-├── functions/               # Cloudflare Workers API
+├── src/worker/              # Worker script (/api/* routes)
 │   └── api/
 │       ├── domains/check.ts    # Domain availability
 │       ├── auth/login.ts       # Authentication
 │       └── support/ticket.ts   # Support tickets
 ├── public/                  # Static assets
 │   ├── _headers             # Security headers
-│   ├── _redirects           # URL redirects
 │   └── favicon.svg          # Site icon
 ├── README.md                # Complete documentation
 ├── DEPLOYMENT.md            # Deployment guide
@@ -103,7 +102,7 @@ wrld.domains_quick/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
-└── wrangler.toml           # Cloudflare configuration
+└── wrangler.jsonc          # Cloudflare Worker configuration
 ```
 
 ## Design System
@@ -145,7 +144,7 @@ wrld.domains_quick/
 3. **Cloudflare Setup**
    - Create KV namespaces
    - Set secrets (API credentials)
-   - Deploy to Cloudflare Pages
+   - Deploy to Cloudflare Workers (Workers Builds from GitHub)
    - Configure custom domain `wrld.domains`
 
 4. **Testing**
@@ -242,7 +241,7 @@ wrld.domains_quick/
 - `package.json` - Dependencies and scripts
 - `tsconfig.json` - TypeScript configuration
 - `vite.config.ts` - Build configuration
-- `wrangler.toml` - Cloudflare Workers config
+- `wrangler.jsonc` - Cloudflare Worker config (static assets + script)
 - `.env.example` - Environment template
 
 ### Source Code

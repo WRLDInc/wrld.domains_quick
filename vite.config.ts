@@ -24,10 +24,10 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // Pages Functions run under `npm run cf:dev` on 8788. When that isn't
-      // running the /api proxy fails and the search falls back to WHMCS.
+      // The Worker runs under `npm run cf:dev` (wrangler dev) on 8787. When it
+      // isn't running the /api proxy fails and the search falls back to WHMCS.
       '/api': {
-        target: 'http://localhost:8788',
+        target: 'http://localhost:8787',
         changeOrigin: true,
       },
     },

@@ -1,0 +1,42 @@
+# Continuous integration only. Deploys are handled by Cloudflare Workers Builds
+# (the Git integration on the Worker), which builds every push and deploys
+# production from main. This workflow makes sure a commit type-checks, passes
+# the tests, builds, and produces a Worker bundle wrangler accepts, so a broken
+# change is caught on the pull request rather than in the Cloudflare build log.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Type-check, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+
+      # Same command Workers Builds runs, minus the upload. Fails on config or
+      # bundling errors without needing a Cloudflare token.
+      - name: Validate the Worker bundle
+        run: npx wrangler deploy --dry-run --outdir .wrangler-dry

@@ -1,0 +1,58 @@
+{
+  // ---------------------------------------------------------------------------
+  // wrld.domains — a Cloudflare Worker with Static Assets.
+  //
+  // Built and deployed by Workers Builds (the Git integration) from
+  // WRLDInc/wrld.domains_quick. Dashboard settings that pair with this file:
+  //   Build command:   npm run build        (Vite → ./dist)
+  //   Deploy command:  npx wrangler deploy  (default)
+  //   Root directory:  leave empty
+  // See DEPLOYMENT.md for the full checklist.
+  //
+  // `name` must match the Worker in the Cloudflare dashboard. Workers Builds
+  // overrides a mismatch in CI, but a local `npm run deploy` would create a
+  // second Worker under this name, so keep them identical.
+  // ---------------------------------------------------------------------------
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wrld-domains",
+  "compatibility_date": "2026-09-01",
+
+  // The Worker script only answers /api/*; everything else is an asset.
+  "main": "src/worker/index.ts",
+
+  // ---------------------------------------------------------------------------
+  // Static assets: the Vite build output.
+  //   - single-page-application: unmatched paths get index.html (200) so the
+  //     Wouter routes (/support, /login, /register) work on hard loads.
+  //   - run_worker_first: /api/* must reach the script even though SPA mode
+  //     would otherwise answer them with index.html.
+  // public/_headers is copied into dist/ by Vite and applied by the asset layer.
+  // ---------------------------------------------------------------------------
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // Non-secret configuration. Secrets (WHMCS_API_IDENTIFIER, WHMCS_API_SECRET)
+  // live on the Worker in the dashboard, or in .dev.vars locally.
+  "vars": {
+    "WHMCS_URL": "https://wrld.host"
+  },
+
+  // Optional: bind a KV namespace to record each availability lookup for
+  // 90 days. The check works without it.
+  // "kv_namespaces": [{ "binding": "DOMAIN_ANALYTICS", "id": "<namespace-id>" }],
+
+  // Custom domain. Adding this moves wrld.domains from the old Pages project
+  // to this Worker on the next production deploy, so it is left commented out
+  // until the preview has been checked.
+  // "routes": [{ "pattern": "wrld.domains", "custom_domain": true }],
+
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  }
+}

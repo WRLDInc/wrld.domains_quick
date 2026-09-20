@@ -1,6 +1,9 @@
 declare global {
-  /** Bindings available to Pages Functions. Secrets live in Cloudflare; see wrangler.toml. */
+  /** Bindings available to the Worker. Secrets live in Cloudflare; see wrangler.jsonc. */
   interface CloudflareEnv {
+    /** Static assets from dist/ (the `assets.binding` in wrangler.jsonc). */
+    ASSETS: Fetcher;
+    /** Non-secret var from wrangler.jsonc. */
     WHMCS_URL: string;
     WHMCS_API_IDENTIFIER: string;
     WHMCS_API_SECRET: string;
