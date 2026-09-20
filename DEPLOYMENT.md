@@ -132,15 +132,17 @@ To verify:
 5. Test login page integration
 6. Submit a test support ticket
 
-## Step 10: Set up GitHub Integration (Optional)
+## Step 10: Deploys from GitHub
 
-Enable automatic deployments:
+The Pages project was created by direct upload, so Cloudflare's Git integration is not available for it. Automatic deploys run from GitHub Actions instead (`.github/workflows/deploy.yml`):
 
-1. In Cloudflare Pages settings, ensure GitHub integration is connected
-2. Configure branch deployments:
-   - **Production**: `main` branch
-   - **Preview**: Pull requests
-3. Every push to `main` will automatically deploy
+1. Add two repository secrets in GitHub (Settings → Secrets and variables → Actions):
+   - `CLOUDFLARE_API_TOKEN` with **Cloudflare Pages: Edit** on the account
+   - `CLOUDFLARE_ACCOUNT_ID`
+2. Pull requests then get a preview deployment on their branch alias, posted as a PR comment.
+3. Every push to `main` deploys production.
+
+The workflow runs `npm run type-check`, `npm test`, and `npm run build` before deploying, so a failing check blocks the deploy.
 
 ## Environment Variables Reference
 

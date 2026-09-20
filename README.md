@@ -154,16 +154,16 @@ npm run build
 npm run deploy
 ```
 
-### Cloudflare Dashboard Setup
+### Deploys from GitHub
 
-1. Go to your Cloudflare dashboard
-2. Navigate to Pages
-3. Create a new project
-4. Connect your GitHub repository (WRLDInc/wrld.domains_quick)
-5. Configure build settings:
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-   - **Environment variables**: Add your WHMCS credentials
+The Pages project `wrld-domains-quicksite` is a direct-upload project, so Cloudflare's own Git integration does not build it. `.github/workflows/deploy.yml` does the job instead: on every pull request it type-checks, tests, builds, and publishes a preview deployment on the branch alias (the URL is posted as a PR comment); on every push to `main` it deploys production.
+
+It needs two repository secrets (GitHub → Settings → Secrets and variables → Actions):
+
+- `CLOUDFLARE_API_TOKEN` with **Cloudflare Pages: Edit** on the account
+- `CLOUDFLARE_ACCOUNT_ID`
+
+WHMCS credentials and the optional KV binding live on the Pages project in the Cloudflare dashboard (Workers & Pages → wrld-domains-quicksite → Settings), not in GitHub.
 
 ### Domain Configuration
 
