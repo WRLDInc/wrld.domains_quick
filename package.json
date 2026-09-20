@@ -1,16 +1,16 @@
 {
   "name": "wrld-domains-quick",
   "version": "2.0.0",
-  "description": "WRLD.domains - domain search and registration front door for WRLD.host. React SPA on Cloudflare Pages with Pages Functions bridging to WHMCS.",
+  "description": "WRLD.domains - domain search and registration front door for WRLD.host. React SPA served as Cloudflare Worker static assets, with a Worker route bridging to WHMCS.",
   "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "wrangler pages deploy dist",
-    "cf:dev": "wrangler pages dev dist --live-reload",
+    "deploy": "wrangler deploy",
+    "cf:dev": "wrangler dev",
     "type-check": "tsc --noEmit",
-    "test": "node --test \"functions/**/*.test.ts\""
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "lucide-react": "^1.40.0",

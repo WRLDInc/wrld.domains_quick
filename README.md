@@ -9,14 +9,14 @@ A modern, lightning-fast domain search interface built with React, TypeScript, a
 - **WHMCS Integration**: Direct integration with WRLD.host for registration, authentication, and support
 - **Analytics**: Backend tracking of domain queries for insights
 - **Responsive Design**: Fully responsive across all devices
-- **Cloudflare Powered**: Deployed on Cloudflare Pages with Workers for optimal performance
+- **Cloudflare Powered**: A Cloudflare Worker with Static Assets, built by Workers Builds from GitHub
 
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, styled with the WRLD design system (https://wrld.design)
 - **Routing**: Wouter (lightweight React router)
 - **Build Tool**: Vite
-- **Deployment**: Cloudflare Pages + Workers
+- **Deployment**: Cloudflare Workers (static assets + a small API script), via Workers Builds
 - **Backend**: Cloudflare Workers (Serverless Functions)
 - **Storage**: Cloudflare KV (Analytics)
 - **Integration**: WHMCS API
@@ -45,7 +45,7 @@ wrld.domains_quick/
 │   │   └── global.css
 │   ├── App.tsx              # Main app component
 │   └── main.tsx             # Entry point
-├── functions/               # Cloudflare Functions (API routes)
+├── src/worker/              # Worker script: /api/* routes (everything else is a static asset)
 │   └── api/
 │       ├── domains/
 │       │   └── check.ts     # Domain availability check
@@ -58,7 +58,7 @@ wrld.domains_quick/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
-└── wrangler.toml           # Cloudflare configuration
+└── wrangler.jsonc          # Cloudflare Worker configuration
 ```
 
 ## Getting Started
@@ -82,7 +82,7 @@ cd wrld.domains_quick
 npm install
 ```
 
-3. Create `.dev.vars` from the example. Pages Functions read their bindings from this file locally (it is git-ignored):
+3. Create `.dev.vars` from the example. `wrangler dev` reads the Worker's secrets from this file locally (it is git-ignored):
 ```bash
 cp .env.example .dev.vars
 ```
@@ -96,9 +96,9 @@ WHMCS_API_SECRET=your_api_secret
 
 ### Development
 
-The inline availability check on the home page calls `/api/domains/check`, a Pages Function. Vite proxies `/api/*` to the Cloudflare runtime on port 8788, so local development needs two processes.
+The inline availability check on the home page calls `/api/domains/check`, a route in the Worker script. Vite proxies `/api/*` to `wrangler dev` on port 8787, so local development needs two processes.
 
-Terminal 1, the Functions runtime (build once first so `dist/` exists; Functions reload on change):
+Terminal 1, the Worker (build once first so `dist/` exists; `wrangler dev` reloads the script on change and serves `dist/` as static assets):
 ```bash
 npm run build
 npm run cf:dev
@@ -109,9 +109,9 @@ Terminal 2, the frontend with hot reload:
 npm run dev
 ```
 
-The app is at `http://localhost:3000`. Searches hit your local Function, which calls WHMCS with the credentials in `.dev.vars`.
+The app is at `http://localhost:3000`. Searches hit your local Worker, which calls WHMCS with the credentials in `.dev.vars`.
 
-**Testing the fallback on purpose.** If the Function is unreachable, not configured (no `.dev.vars`, answers 503), or slow, the search form submits straight to the WHMCS cart on wrld.host instead. Running only `npm run dev` exercises exactly that path, and every search will leave the page for wrld.host. That is expected behaviour, not a bug.
+**Testing the fallback on purpose.** If the Worker is unreachable, not configured (no `.dev.vars`, answers 503), or slow, the search form submits straight to the WHMCS cart on wrld.host instead. Running only `npm run dev` exercises exactly that path, and every search will leave the page for wrld.host. That is expected behaviour, not a bug.
 
 Run the request-validation tests for the check endpoint with:
 ```bash
@@ -132,47 +132,29 @@ npm run preview
 
 ## Deployment
 
-### Cloudflare Pages Setup
+The site is a Cloudflare Worker with Static Assets, configured in `wrangler.jsonc`. **Workers Builds** (the Git integration on the Worker) builds every push to `WRLDInc/wrld.domains_quick` with `npm run build` and deploys with `npx wrangler deploy`; `main` is production, other branches get preview versions. The full checklist, including dashboard settings and the custom-domain cutover, is in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-1. **Create KV Namespace**:
+### Runtime configuration (Cloudflare dashboard → the Worker → Settings → Variables and Secrets)
+
+- `WHMCS_API_IDENTIFIER` and `WHMCS_API_SECRET` as secrets. Without them `/api/domains/check` answers 503 and the search falls back to the WHMCS cart.
+- `WHMCS_URL` is a plain var set in `wrangler.jsonc`.
+- Optional: uncomment the `kv_namespaces` block in `wrangler.jsonc` and bind a namespace to record search analytics for 90 days.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` type-checks, runs the tests, builds, and runs `wrangler deploy --dry-run` on every pull request and push to `main`. It needs no Cloudflare credentials; deploys are Workers Builds' job.
+
+### Manual deploy (fallback)
+
 ```bash
-wrangler kv:namespace create "DOMAIN_ANALYTICS"
-wrangler kv:namespace create "DOMAIN_ANALYTICS" --preview
-```
-
-2. **Update `wrangler.toml`** with the KV namespace IDs returned from the above commands.
-
-3. **Set Secrets**:
-```bash
-wrangler secret put WHMCS_API_IDENTIFIER
-wrangler secret put WHMCS_API_SECRET
-```
-
-4. **Deploy to Cloudflare Pages**:
-```bash
+npx wrangler login
 npm run build
 npm run deploy
 ```
 
-### Deploys from GitHub
+### Domain configuration
 
-The Pages project `wrld-domains-quicksite` is a direct-upload project, so Cloudflare's own Git integration does not build it. `.github/workflows/deploy.yml` does the job instead: on every pull request it type-checks, tests, builds, and publishes a preview deployment on the branch alias (the URL is posted as a PR comment); on every push to `main` it deploys production.
-
-It needs two repository secrets (GitHub → Settings → Secrets and variables → Actions):
-
-- `CLOUDFLARE_API_TOKEN` with **Cloudflare Pages: Edit** on the account
-- `CLOUDFLARE_ACCOUNT_ID`
-
-WHMCS credentials and the optional KV binding live on the Pages project in the Cloudflare dashboard (Workers & Pages → wrld-domains-quicksite → Settings), not in GitHub.
-
-### Domain Configuration
-
-1. Add your custom domain `wrld.domains` in Cloudflare Pages settings
-2. Configure DNS:
-   - Add a CNAME record: `@` → `wrld-domains-quick.pages.dev`
-   - Ensure SSL/TLS is set to "Full" or "Full (strict)"
-3. Set up redirect from `www.wrld.domains` to `wrld.domains`:
-   - Create a Page Rule or use Cloudflare Redirect Rules
+`wrld.domains` is attached to the Worker through the `routes` block in `wrangler.jsonc` (commented out until the preview is verified; see DEPLOYMENT.md). `www.wrld.domains` should redirect to the apex with a Cloudflare Redirect Rule on the zone.
 
 ## WHMCS API Configuration
 

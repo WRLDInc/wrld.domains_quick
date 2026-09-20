@@ -20,10 +20,10 @@ npm install
 2. **Configure environment**:
 ```bash
 cp .env.example .dev.vars
-# Edit .dev.vars with your WHMCS credentials (git-ignored; Pages Functions read this file locally)
+# Edit .dev.vars with your WHMCS credentials (git-ignored; wrangler dev reads this file locally)
 ```
 
-3. **Start the Functions runtime** (terminal 1). Build once so `dist/` exists, then run the Cloudflare runtime on port 8788:
+3. **Start the Worker** (terminal 1). Build once so `dist/` exists, then run `wrangler dev` on port 8787 (it serves `dist/` as static assets and the script for `/api/*`):
 ```bash
 npm run build
 npm run cf:dev
@@ -34,7 +34,7 @@ npm run cf:dev
 npm run dev
 ```
 
-Visit `http://localhost:3000`. Vite proxies `/api/*` to port 8788, so the inline domain search talks to your local Function.
+Visit `http://localhost:3000`. Vite proxies `/api/*` to port 8787, so the inline domain search talks to your local Worker.
 
 If you skip step 3, every search falls back to the WHMCS cart on wrld.host (the same path the no-JavaScript form takes). Useful for checking the fallback, confusing if you expected inline results.
 
@@ -50,14 +50,16 @@ src/
 └── styles/          # Global CSS styles
 ```
 
-### Backend (Cloudflare Workers)
+### Backend (Cloudflare Worker)
 ```
-functions/
-└── api/
-    ├── domains/     # Domain search endpoints
-    ├── auth/        # Authentication endpoints
-    └── support/     # Support ticket endpoints
+src/worker/
+├── index.ts               # fetch handler: /api/* → routes, everything else → ASSETS
+├── domains-check.ts       # POST /api/domains/check → WHMCS DomainWhois
+└── domains-check.test.ts  # node --test coverage of the request-validation paths
+wrangler.jsonc             # Worker + static-assets configuration
 ```
+
+Requests that don't match `/api/*` never reach the script: the asset layer serves `dist/` directly and answers unknown paths with `index.html` (SPA mode).
 
 ## Tech Stack Details
 
@@ -142,34 +144,32 @@ export function Button({ label, onClick, disabled = false }: ButtonProps) {
 
 ### Creating New Endpoints
 
-1. **Create function file**:
+1. **Write a handler** in `src/worker/`:
 ```typescript
-// functions/api/example/endpoint.ts
-interface Env extends CloudflareEnv {}
-
-export const onRequestPost: PagesFunction<Env> = async (context) => {
-  try {
-    const data = await context.request.json();
-
-    // Your logic here
-
-    return new Response(JSON.stringify({ result: 'success' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({
-      result: 'error',
-      message: error.message,
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+// src/worker/example.ts
+export async function handleExample(request: Request, env: CloudflareEnv): Promise<Response> {
+  if (request.method !== 'POST') {
+    return Response.json({ result: 'error', message: 'Use POST.' }, { status: 405, headers: { Allow: 'POST' } });
   }
-};
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return Response.json({ result: 'error', message: 'Send a JSON body.' }, { status: 400 });
+  }
+  // Your logic here, using env.WHMCS_* for WHMCS calls
+  return Response.json({ result: 'success', payload });
+}
 ```
 
-2. **Access via**: `/api/example/endpoint`
+2. **Route it** in `src/worker/index.ts`:
+```typescript
+if (pathname === '/api/example') return handleExample(request, env);
+```
+
+3. **Test it** with a `*.test.ts` next to it (`npm test`), and keep runtime imports on explicit `.ts` extensions so Node can load the module.
+
+Only `/api/*` reaches the Worker (see `run_worker_first` in `wrangler.jsonc`); a new prefix needs adding there too.
 
 ### WHMCS Integration
 
@@ -206,11 +206,11 @@ npm run dev      # terminal 2
 With `npm run cf:dev` running:
 ```bash
 # Live check (needs .dev.vars)
-curl -X POST http://localhost:8788/api/domains/check   -H "Content-Type: application/json"   -d '{"domains": ["example.com", "example.net"]}'
+curl -X POST http://localhost:8787/api/domains/check   -H "Content-Type: application/json"   -d '{"domains": ["example.com", "example.net"]}'
 
 # Error paths: 400 for bad bodies, 503 without WHMCS secrets, 405 for GET
-curl -X POST http://localhost:8788/api/domains/check -H "Content-Type: application/json" -d 'null'
-curl -i http://localhost:8788/api/domains/check
+curl -X POST http://localhost:8787/api/domains/check -H "Content-Type: application/json" -d 'null'
+curl -i http://localhost:8787/api/domains/check
 ```
 
 ### Testing Production Build
@@ -325,10 +325,10 @@ wrangler tail
 **Solution**: Verify WHMCS API credentials in environment
 
 **Problem**: KV not working
-**Solution**: Check namespace bindings in wrangler.toml (analytics are optional; the check works without KV)
+**Solution**: Check the `kv_namespaces` binding in wrangler.jsonc (analytics are optional; the check works without KV)
 
 **Problem**: Every search redirects to wrld.host
-**Solution**: The Function on port 8788 isn't running or isn't configured. Start `npm run cf:dev` and make sure `.dev.vars` has the WHMCS credentials.
+**Solution**: The Worker on port 8787 isn't running or isn't configured. Start `npm run cf:dev` and make sure `.dev.vars` has the WHMCS credentials.
 
 **Problem**: Build fails
 **Solution**: Clear cache, reinstall dependencies
@@ -376,7 +376,7 @@ refactor: Simplify WHMCS client logic
 ## Deployment
 
 ### Preview Deployments
-Every PR automatically gets a preview deployment on Cloudflare Pages.
+Every PR gets a preview build from Cloudflare Workers Builds (see DEPLOYMENT.md), and the CI workflow runs type-check, tests, build, and a `wrangler deploy --dry-run`.
 
 ### Production Deployment
 Push to `main` branch:

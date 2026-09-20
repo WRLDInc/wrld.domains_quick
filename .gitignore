@@ -40,3 +40,6 @@ wrangler.toml.backup
 # OS
 .DS_Store
 Thumbs.db
+
+# wrangler dry-run output (CI)
+.wrangler-dry

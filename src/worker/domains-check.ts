@@ -1,18 +1,20 @@
-// Runtime imports carry the .ts extension so the handler also loads under
+// Runtime imports carry the .ts extension so this module also loads under
 // Node's ESM loader for `npm test`; esbuild (wrangler) and tsc accept it too.
-import { WHMCSClient } from '../../../src/lib/whmcs-client.ts';
-import { DOMAIN_RE } from '../../../src/lib/domains.ts';
-import type { DomainAnalytics, DomainCheckResponse } from '../../../src/types/whmcs';
+import { WHMCSClient } from '../lib/whmcs-client.ts';
+import { DOMAIN_RE } from '../lib/domains.ts';
+import type { DomainAnalytics, DomainCheckResponse } from '../types/whmcs';
 
 const MAX_DOMAINS = 10;
 const ANALYTICS_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 days
+const BAD_BODY = 'Send a JSON body with a domains array.';
 
-function json(body: DomainCheckResponse, status = 200): Response {
+function json(body: DomainCheckResponse, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
+      ...extra,
     },
   });
 }
@@ -21,20 +23,28 @@ function json(body: DomainCheckResponse, status = 200): Response {
  * POST /api/domains/check  { domains: string[] }
  *
  * Checks up to ten domains against WHMCS `DomainWhois` in parallel and returns
- * one row per domain. Analytics are written to KV only when the namespace is
- * bound, and off the request path via waitUntil.
+ * one row per domain. Anything but POST gets a 405. Analytics are written to
+ * KV only when the namespace is bound, and off the request path via waitUntil.
  */
-export const onRequestPost: PagesFunction<CloudflareEnv> = async ({ request, env, waitUntil }) => {
+export async function handleDomainCheck(
+  request: Request,
+  env: CloudflareEnv,
+  ctx: Pick<ExecutionContext, 'waitUntil'>,
+): Promise<Response> {
+  if (request.method !== 'POST') {
+    return json({ result: 'error', domains: [], message: 'Use POST.' }, 405, { Allow: 'POST' });
+  }
+
   // Parse defensively: `null`, a bare string or an array are all valid JSON
-  // that would otherwise blow up on `.domains` outside the try/catch.
+  // that would otherwise blow up on `.domains`.
   let payload: unknown;
   try {
     payload = await request.json();
   } catch {
-    return json({ result: 'error', domains: [], message: 'Send a JSON body with a domains array.' }, 400);
+    return json({ result: 'error', domains: [], message: BAD_BODY }, 400);
   }
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-    return json({ result: 'error', domains: [], message: 'Send a JSON body with a domains array.' }, 400);
+    return json({ result: 'error', domains: [], message: BAD_BODY }, 400);
   }
 
   const requested = (payload as { domains?: unknown }).domains;
@@ -72,7 +82,7 @@ export const onRequestPost: PagesFunction<CloudflareEnv> = async ({ request, env
       const userAgent = request.headers.get('user-agent');
       const country = request.headers.get('cf-ipcountry');
       const stamp = Date.now();
-      waitUntil(
+      ctx.waitUntil(
         Promise.all(
           results.map((r) => {
             const record: DomainAnalytics = {
@@ -95,13 +105,4 @@ export const onRequestPost: PagesFunction<CloudflareEnv> = async ({ request, env
     console.error('Domain check error:', error);
     return json({ result: 'error', domains: [], message: 'We could not check availability right now.' }, 502);
   }
-};
-
-/** Anything but POST gets a clear 405 instead of the SPA shell. */
-export const onRequest: PagesFunction<CloudflareEnv> = async (context) => {
-  if (context.request.method === 'POST') return context.next();
-  return new Response(JSON.stringify({ result: 'error', domains: [], message: 'Use POST.' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'POST' },
-  });
-};
+}

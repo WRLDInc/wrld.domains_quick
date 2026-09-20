@@ -9,20 +9,20 @@ npm run dev          # Start Vite dev server at http://localhost:3000
 npm run build        # Production build to dist/
 npm run preview      # Preview production build locally
 npm run type-check   # TypeScript validation without emitting files
-npm run deploy       # Deploy dist/ to Cloudflare Pages via wrangler
-npm run cf:dev       # Run Cloudflare Pages Functions locally (port 8788) with live reload
-npm test             # Request-validation tests for /api/domains/check (node --test, no WHMCS calls)
+npm run deploy       # wrangler deploy (manual fallback; Workers Builds deploys from GitHub)
+npm run cf:dev       # wrangler dev: serves dist/ + the Worker on port 8787 (build first)
+npm test             # Worker route tests for /api/domains/check (node --test, no WHMCS calls)
 ```
 
-Local development needs two processes: `npm run build && npm run cf:dev` for the Functions runtime (reads WHMCS secrets from `.dev.vars`) and `npm run dev` for the frontend. With only Vite running, every domain search falls back to the WHMCS cart on wrld.host. No linter is configured.
+Local development needs two processes: `npm run build && npm run cf:dev` for the Worker (reads WHMCS secrets from `.dev.vars`) and `npm run dev` for the frontend. With only Vite running, every domain search falls back to the WHMCS cart on wrld.host. No linter is configured.
 
 ## Architecture
 
-This is a **React 18 SPA** (Vite + TypeScript) deployed to **Cloudflare Pages**, with serverless API endpoints as **Cloudflare Pages Functions** in `functions/api/`. The frontend dev server proxies `/api/*` requests to `localhost:8788` (the Cloudflare Workers runtime). When that proxy is down the domain search degrades to a plain form submit against WHMCS.
+This is a **React 18 SPA** (Vite + TypeScript) deployed as a **Cloudflare Worker with Static Assets**: `dist/` is served by the asset layer and `src/worker/index.ts` answers `/api/*` (config in `wrangler.jsonc`). The frontend dev server proxies `/api/*` requests to `localhost:8787` (`wrangler dev`). When that proxy is down the domain search degrades to a plain form submit against WHMCS.
 
 ### Routing
 
-Wouter handles client-side routing in `src/App.tsx`. All paths fall back to `index.html` via `public/_redirects`. Routes: `/` (home), `/login` and `/register` (handoff pages that send people to wrld.host), `/support`.
+Wouter handles client-side routing in `src/App.tsx`. All paths fall back to `index.html` via `assets.not_found_handling: "single-page-application"` in `wrangler.jsonc`; `/api/*` is routed to the script first via `run_worker_first`. Routes: `/` (home), `/login` and `/register` (handoff pages that send people to wrld.host), `/support`.
 
 `src/lib/usePageTitle.ts` sets the per-route title and rewrites `<link rel="canonical">` to the current route (the 404 page removes it), because the shell in `index.html` is served for every path.
 
@@ -30,12 +30,12 @@ Every outbound URL lives in `src/lib/links.ts`. Add new destinations there, not 
 
 ### API Layer
 
-`functions/api/` contains Pages Functions that bridge the frontend to WHMCS:
-- `domains/check.ts` → WHMCS `DomainWhois` (one call per domain, run in parallel, max 10). Used by the inline availability results on the home page. Answers 503 when the WHMCS secrets are missing; the UI then falls back to WHMCS's own checker.
-- `auth/login.ts` → WHMCS `ValidateLogin` (not used by the UI)
-- `support/ticket.ts` → WHMCS `OpenTicket` (not used by the UI; support links go to the WHMCS ticket desk)
+`src/worker/` is the Worker script:
+- `index.ts` routes `/api/domains/check` to the handler, other `/api/*` to a JSON 404, and everything else to the `ASSETS` binding.
+- `domains-check.ts` → WHMCS `DomainWhois` (one call per domain, run in parallel, max 10). Used by the inline availability results on the home page. 405 on non-POST, 400 on bad bodies, 503 when the WHMCS secrets are missing (the UI then falls back to WHMCS's own checker).
+- `domains-check.test.ts` covers those paths under `node --test`. Runtime imports in the Worker use explicit `.ts` extensions so Node can load them.
 
-`src/lib/whmcs-client.ts` is the server-side WHMCS client (only imported by Functions). `src/lib/domains.ts` holds the domain parsing/validation shared by the UI and the check function. WHMCS credentials (`WHMCS_URL`, `WHMCS_API_IDENTIFIER`, `WHMCS_API_SECRET`) are Cloudflare secrets in production and live in `.dev.vars` locally. The `DOMAIN_ANALYTICS` KV binding is optional.
+`src/lib/whmcs-client.ts` is the server-side WHMCS client (only imported by the Worker). `src/lib/domains.ts` holds the domain parsing/validation shared by the UI and the check function. `WHMCS_URL` is a var in `wrangler.jsonc`; `WHMCS_API_IDENTIFIER` and `WHMCS_API_SECRET` are Worker secrets in production and live in `.dev.vars` locally. The `DOMAIN_ANALYTICS` KV binding is optional.
 
 ### Key Libraries
 
@@ -66,4 +66,4 @@ Signature motion pieces (both keep static surfaces monochrome):
 
 ### Deployment
 
-The Pages project (`wrld-domains-quicksite`) is a direct-upload project with no Cloudflare Git integration, so nothing deploys on push by itself. `.github/workflows/deploy.yml` fills that role: it type-checks, tests, builds, and runs `wrangler pages deploy` (preview per pull-request branch, production on `main`). It needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. For manual deploys: `npm run build && npm run deploy` after `wrangler login`. Security and cache headers are set in `public/_headers` (fonts are listed by exact filename so a missing font never caches a 404). `www.wrld.domains` currently returns 522 at the edge: the `_redirects` rule only works once the `www` hostname is attached to the Pages project.
+Workers Builds (the Git integration on the Worker) builds every push with `npm run build` and deploys with `npx wrangler deploy`; `main` is production, other branches get preview versions. `.github/workflows/ci.yml` only type-checks, tests, builds, and runs `wrangler deploy --dry-run`. The Worker `name` in `wrangler.jsonc` must match the dashboard. The custom-domain `routes` block is commented out until the preview is verified; see DEPLOYMENT.md. Security and cache headers are set in `public/_headers` (fonts are listed by exact filename so a missing font never caches a 404). `www.wrld.domains` needs a zone Redirect Rule to the apex; `_redirects` can't match hostnames on Workers.

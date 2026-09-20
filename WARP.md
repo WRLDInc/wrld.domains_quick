@@ -4,19 +4,19 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-WRLD.domains Quick Search - A React/TypeScript frontend for domain availability checking, deployed on Cloudflare Pages with Workers backend. Integrates with WHMCS at wrld.host for domain registration, authentication, and support ticketing.
+WRLD.domains Quick Search - A React/TypeScript frontend for domain availability checking, deployed as a Cloudflare Worker with Static Assets (Vite build in `dist/`, `/api/*` handled by `src/worker/index.ts`). Integrates with WHMCS at wrld.host for domain registration, authentication, and support ticketing.
 
 ## Commands
 
 ```bash
 # Development
 npm run dev              # Start Vite dev server at localhost:3000
-npm run cf:dev           # Test with Cloudflare Workers locally (dist + live-reload)
+npm run cf:dev           # wrangler dev: dist/ assets + the Worker on port 8787 (build first)
 
 # Build & Deploy
 npm run build            # Production build to dist/
 npm run preview          # Preview production build
-npm run deploy           # Deploy to Cloudflare Pages via Wrangler
+npm run deploy           # wrangler deploy (manual fallback; Workers Builds deploys from GitHub)
 npm run type-check       # TypeScript type checking without emit
 
 # Cloudflare Secrets (production)
@@ -28,20 +28,16 @@ wrangler secret put WHMCS_API_SECRET
 
 ### Frontend → Backend → WHMCS Flow
 ```
-React Pages → /api/* (Cloudflare Functions) → WHMCS API (wrld.host)
+React pages → /api/* (Worker script) → WHMCS API (wrld.host)
 ```
 
-The frontend makes requests to `/api/*` endpoints which are Cloudflare Functions (in `functions/`). These functions use `WHMCSClient` (`src/lib/whmcs-client.ts`) to communicate with the WHMCS installation at wrld.host.
+The frontend makes requests to `/api/*` endpoints handled by the Worker script in `src/worker/`. The script uses `WHMCSClient` (`src/lib/whmcs-client.ts`) to communicate with the WHMCS installation at wrld.host. Everything outside `/api/*` is served from `dist/` by Cloudflare's static-asset layer, with `index.html` as the SPA fallback.
 
-### API Endpoints (Cloudflare Functions)
-Functions use the Pages Functions convention - file path determines route:
-- `functions/api/domains/check.ts` → `POST /api/domains/check`
-- `functions/api/auth/login.ts` → `POST /api/auth/login`
-- `functions/api/support/ticket.ts` → `POST /api/support/ticket`
+### API Endpoints (Worker)
+- `POST /api/domains/check` → `src/worker/domains-check.ts` (WHMCS `DomainWhois`, up to 10 domains in parallel; 405 on other methods, 400 on bad bodies, 503 when secrets are missing)
+- any other `/api/*` → JSON 404
 
-Each function exports `onRequestPost`, `onRequestGet`, etc. and receives `context` with:
-- `context.env` - Environment variables and KV bindings
-- `context.request` - Request object
+The handler receives `(request, env, ctx)`: `env` carries `WHMCS_URL`, the two WHMCS secrets, the optional `DOMAIN_ANALYTICS` KV binding, and `ASSETS`; `ctx.waitUntil` is used for analytics writes.
 
 ### WHMCS Client Pattern
 ```typescript
@@ -80,11 +76,11 @@ Uses Wouter (lightweight router) - routes defined in `App.tsx`:
 CSS-in-JS via inline `<style>` tags in components. Uses CSS custom properties from `src/styles/global.css` (e.g., `--color-primary`, `--transition-base`).
 
 ### Local Dev Proxy
-Vite proxies `/api/*` requests to `localhost:8788` for local Workers testing.
+Vite proxies `/api/*` requests to `localhost:8787` (`wrangler dev`) for local testing.
 
 ## Important Notes
 
 - **Never commit `.env`** - Use `.env.example` as reference
-- **KV namespace IDs in `wrangler.toml`** are placeholders - must be created via `wrangler kv:namespace create`
+- **KV binding in `wrangler.jsonc`** is commented out and optional - create a namespace via `wrangler kv namespace create` and uncomment it to record analytics
 - **WHMCS API credentials** must be set as Cloudflare secrets for production
-- Production domain: `wrld.domains`, served via Cloudflare Pages
+- Production domain: `wrld.domains`, served by the Cloudflare Worker (custom domain attached via the `routes` block in `wrangler.jsonc`)
