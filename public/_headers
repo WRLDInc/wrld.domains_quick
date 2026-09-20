@@ -1,15 +1,46 @@
-# Security headers
+# Cloudflare Pages response headers.
+# Every matching rule applies, and duplicate header names are appended rather
+# than replaced, so each Cache-Control rule below matches a disjoint path set.
+
+# Security baseline, every path
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
-  X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000
 
-# Cache static assets
+# Vite emits hashed filenames under /assets, so they are safe to cache forever
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Typefaces from the WRLD design system. Listed by exact filename rather than
+# /fonts/* so a mistyped font path can't cache a 404 for a year.
+/fonts/Montserrat-VariableFont_wght.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/Ubuntu-Light.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/Ubuntu-Regular.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/Ubuntu-Medium.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/Ubuntu-Bold.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/UbuntuMono-Regular.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/UbuntuMono-Bold.ttf
+  Cache-Control: public, max-age=31536000, immutable
+
+# Brand artwork
+/logos/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/favicons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 # Don't cache HTML
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
+
+# API responses are per-request
+/api/*
+  Cache-Control: no-store

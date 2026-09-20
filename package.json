@@ -1,7 +1,7 @@
 {
   "name": "wrld-domains-quick",
-  "version": "1.0.0",
-  "description": "Modern domain search interface for WRLD.domains - Cloudflare Workers/Pages integration with WHMCS",
+  "version": "2.0.0",
+  "description": "WRLD.domains - domain search and registration front door for WRLD.host. React SPA on Cloudflare Pages with Pages Functions bridging to WHMCS.",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -9,19 +9,17 @@
     "preview": "vite preview",
     "deploy": "wrangler pages deploy dist",
     "cf:dev": "wrangler pages dev dist --live-reload",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "node --test \"functions/**/*.test.ts\""
   },
   "dependencies": {
-    "@tsparticles/react": "^3.0.0",
-    "@tsparticles/slim": "^3.0.3",
-    "framer-motion": "^11.5.4",
-    "gleap": "^15.2.1",
+    "lucide-react": "^1.40.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "wouter": "^3.3.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241127.0",
+    "@cloudflare/workers-types": "^5.20260918.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",

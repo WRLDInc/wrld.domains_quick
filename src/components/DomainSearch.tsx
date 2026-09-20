@@ -1,177 +1,211 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useId, useRef, useState, type FormEvent } from 'react';
+import { Button } from './Button';
+import { StatusPill, type PillStatus } from './StatusPill';
+import { RollText } from './RollText';
+import { LINKS, cartUrl } from '@/lib/links';
+import { POPULAR_TLDS, buildCandidates, normalizeQuery, parseDomain, withTld } from '@/lib/domains';
+import type { DomainCheckResponse } from '@/types/whmcs';
 
-const POPULAR_TLDS = ['.com', '.net', '.org', '.io', '.dev', '.app', '.tech', '.ai'];
+interface Row {
+  domain: string;
+  status: PillStatus;
+}
 
+const CHECK_TIMEOUT_MS = 12_000;
+
+/**
+ * Domain search with progressive enhancement.
+ *
+ * The form itself is a plain GET to the WHMCS cart on wrld.host, so it works
+ * with JavaScript off. With JavaScript on, submit calls /api/domains/check
+ * (a Pages Function in front of WHMCS DomainWhois) and renders availability
+ * inline. If that call fails for any reason the form falls through to WHMCS,
+ * which is the source of truth either way.
+ */
 export function DomainSearch() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const id = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const normalized = normalizeQuery(query);
+  const activeTld = parseDomain(normalized)?.tld ?? null;
+
+  function pickTld(tld: string) {
+    setQuery(withTld(query, tld));
+    setNotice(null);
+    inputRef.current?.focus();
+  }
+
+  /** Hand the query to WHMCS's own checker (the same path the no-JS form takes). */
+  function fallbackToWhmcs() {
+    if (inputRef.current) inputRef.current.value = normalized || query.trim();
+    formRef.current?.submit();
+  }
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = parseDomain(normalized);
+    if (!parsed) {
+      setNotice('Enter a domain name, like example.com.');
+      return;
+    }
+
+    const candidates = buildCandidates(parsed);
+    setNotice(null);
+    setBusy(true);
+    setRows(candidates.map((domain) => ({ domain, status: 'checking' })));
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+
+    try {
+      const res = await fetch('/api/domains/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domains: candidates }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as DomainCheckResponse;
+      if (data.result !== 'success') throw new Error(data.message ?? 'Check failed');
+
+      setRows(
+        candidates.map((domain) => {
+          const hit = data.domains.find((d) => d.domain === domain);
+          const status: PillStatus =
+            hit?.status === 'available' ? 'available' : hit?.status === 'unavailable' ? 'taken' : 'unknown';
+          return { domain, status };
+        }),
+      );
+    } catch {
+      fallbackToWhmcs();
+    } finally {
+      clearTimeout(timer);
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="domain-search">
-      {/* WHMCS Integration: Direct form submission to cart.php */}
-      <motion.form
-        action="https://wrld.host/cart.php?a=add&domain=register"
-        method="post"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+    <div className="search">
+      <form
+        ref={formRef}
         className="search-form"
+        action="https://wrld.host/cart.php"
+        method="get"
+        role="search"
+        aria-label="Domain search"
+        onSubmit={onSubmit}
       >
-        <div className="search-input-wrapper">
+        <input type="hidden" name="a" value="add" />
+        <input type="hidden" name="domain" value="register" />
+
+        <label htmlFor={`${id}-query`} className="sr-only">
+          Domain name
+        </label>
+        <div className="search-bar">
           <input
-            type="text"
+            ref={inputRef}
+            id={`${id}-query`}
             name="query"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Enter your domain name..."
             className="search-input"
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (notice) setNotice(null);
+            }}
+            placeholder="yourname.com"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="url"
+            enterKeyHint="search"
           />
-          <button
-            type="submit"
-            className="search-button"
-            disabled={!searchTerm.trim()}
-          >
-            Search
-          </button>
+          <Button type="submit" variant="warm" size="lg" disabled={busy || normalized.length === 0}>
+            <RollText>{busy ? 'Checking…' : 'Search'}</RollText>
+          </Button>
         </div>
-        <div className="tld-suggestions">
-          {POPULAR_TLDS.map((tld, index) => (
-            <motion.button
+
+        {notice ? (
+          <p className="search-notice" role="alert">
+            {notice}
+          </p>
+        ) : null}
+
+        <div className="search-tlds" role="group" aria-label="Popular TLDs">
+          <span className="meta">Try</span>
+          {POPULAR_TLDS.map((tld) => (
+            <button
               key={tld}
               type="button"
-              className="tld-chip"
-              onClick={() => {
-                const cleanTerm = searchTerm.replace(/\.[a-z]+$/i, '');
-                setSearchTerm(`${cleanTerm}${tld}`);
-              }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 + index * 0.05, type: 'spring', stiffness: 300 }}
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
+              className="tld"
+              aria-pressed={activeTld === tld}
+              onClick={() => pickTld(tld)}
             >
-              {tld}
-            </motion.button>
+              .{tld}
+            </button>
           ))}
         </div>
-      </motion.form>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="search-info"
-      >
-        <p>Search for your perfect domain and check availability instantly at WRLD.host</p>
-      </motion.div>
+        <div className="search-foot">
+          <span>
+            Already own it?{' '}
+            <a href={LINKS.transferDomain}>
+              Transfer it to WRLD.host <span className="arrow" aria-hidden="true">↗</span>
+            </a>
+          </span>
+          <a href={LINKS.registerDomain}>
+            Search on WRLD.host instead <span className="arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </form>
 
-      <style>{`
-        .domain-search {
-          width: 100%;
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        .search-form {
-          margin-bottom: 2rem;
-        }
-
-        .search-input-wrapper {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .search-input {
-          flex: 1;
-          padding: 1rem 1.5rem;
-          font-size: 1.125rem;
-          border-radius: 0.75rem;
-          border: 2px solid var(--color-border);
-          background: var(--color-bg-card);
-          color: var(--color-text-primary);
-          transition: all var(--transition-base);
-        }
-
-        .search-input:focus {
-          border-color: var(--color-primary);
-          box-shadow: var(--glow-primary);
-        }
-
-        .search-input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .search-button {
-          padding: 1rem 2.5rem;
-          font-size: 1.125rem;
-          font-weight: 600;
-          border-radius: 0.75rem;
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          color: white;
-          transition: all var(--transition-base);
-          box-shadow: var(--shadow-md);
-          min-width: 120px;
-        }
-
-        .search-button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-lg), var(--glow-primary);
-        }
-
-        .search-button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .search-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .tld-suggestions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        .tld-chip {
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          font-family: var(--font-mono);
-          border-radius: 0.5rem;
-          background: var(--color-bg-elevated);
-          color: var(--color-text-secondary);
-          border: 1px solid var(--color-border);
-          transition: all var(--transition-fast);
-        }
-
-        .tld-chip:hover {
-          background: var(--color-bg-card);
-          color: var(--color-primary);
-          border-color: var(--color-primary);
-        }
-
-        .search-info {
-          text-align: center;
-          padding: 1.5rem;
-          border-radius: 0.75rem;
-          background: var(--color-bg-elevated);
-          border: 1px solid var(--color-border);
-        }
-
-        .search-info p {
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-        }
-
-        @media (max-width: 768px) {
-          .search-input-wrapper {
-            flex-direction: column;
-          }
-        }
-      `}</style>
+      {rows ? (
+        <div aria-live="polite">
+          <ul className="results">
+            {rows.map((row) => (
+              <li key={row.domain} className="result">
+                <span className="result-domain">{row.domain}</span>
+                <StatusPill status={row.status} />
+                <span className="result-action">{renderAction(row)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="meta results-note">
+            Availability is checked live through WRLD.host. Pricing and terms show at checkout.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function renderAction(row: Row) {
+  switch (row.status) {
+    case 'available':
+      return (
+        <Button href={cartUrl('register', row.domain)} variant="warm" size="sm">
+          Register <span className="arrow" aria-hidden="true">↗</span>
+        </Button>
+      );
+    case 'taken':
+      return (
+        <a className="result-link" href={cartUrl('transfer', row.domain)}>
+          Yours already? Transfer it ↗
+        </a>
+      );
+    case 'unknown':
+      return (
+        <a className="result-link" href={cartUrl('register', row.domain)}>
+          Check on WRLD.host ↗
+        </a>
+      );
+    default:
+      return null;
+  }
 }

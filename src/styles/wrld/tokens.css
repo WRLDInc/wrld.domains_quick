@@ -1,0 +1,255 @@
+/* ============================================================
+   WRLD Design System — Design Tokens
+   Version: 0.1.0 · 2026-04-18
+   Canonical: github.com/WRLDInc/DesignSystem
+
+   Usage:
+     @import url('./tokens.css');
+     Then use CSS custom properties throughout:
+       color: var(--wrld-fg);
+       background: var(--wrld-bg);
+
+   Mode switch:
+     Apply one of these to <html> or a wrapping element:
+       data-theme="light"   → light mode (default if no attr)
+       data-theme="dark"    → dark mode
+       data-theme="auto"    → respect prefers-color-scheme
+   ============================================================ */
+
+:root {
+  /* ---------- Monochrome scale (source of truth) ----------
+     Near-black -> near-white with perceptual steps.
+     Use scale values to derive semantic tokens below. */
+  --wrld-mono-0:   #ffffff;
+  --wrld-mono-50:  #fafafa;
+  --wrld-mono-100: #f4f4f5;
+  --wrld-mono-200: #e4e4e7;
+  --wrld-mono-300: #d4d4d8;
+  --wrld-mono-400: #a1a1aa;
+  --wrld-mono-500: #71717a;
+  --wrld-mono-600: #52525b;
+  --wrld-mono-700: #3f3f46;
+  --wrld-mono-800: #27272a;
+  --wrld-mono-900: #18181b;
+  --wrld-mono-950: #0a0a0a; /* signature near-black */
+
+  /* ---------- Interactive accents (legacy colors, preserved) ---
+     Apply only on hover, focus, active, motion, gradients.
+     Never as static fills on page surfaces. */
+  --wrld-accent-primary:       #007fee; /* WRLD blue — default hover/focus */
+  --wrld-accent-primary-rgb:   0 127 238; /* @kind color */
+  --wrld-accent-secondary:     #00adee; /* original sky blue — gradient companion */
+  --wrld-accent-secondary-rgb: 0 173 238; /* @kind color */
+  --wrld-accent-warm:          #EE9300; /* orange — commerce/sales CTA */
+  --wrld-accent-warm-rgb:      238 147 0; /* @kind color */
+
+  /* Gradient sweep — reserved for motion moments only */
+  --wrld-accent-gradient: linear-gradient(
+    90deg,
+    var(--wrld-accent-primary) 0%,
+    var(--wrld-accent-secondary) 50%,
+    var(--wrld-accent-warm) 100%
+  ); /* @kind color */
+
+  /* ---------- System semantic (status, not brand) ---------- */
+  --wrld-status-success: #10b981;
+  --wrld-status-warning: #f59e0b;
+  --wrld-status-danger:  #ef4444;
+  --wrld-status-info:    #3b82f6;
+
+  /* ---------- Typography ---------- */
+  --wrld-font-display: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --wrld-font-body:    'Ubuntu', system-ui, -apple-system, sans-serif;
+  --wrld-font-body-alt:'Ubuntu', system-ui, -apple-system, sans-serif;
+  --wrld-font-mono:    'Ubuntu Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale (fluid with clamp for display; fixed for UI) */
+  --wrld-fs-display-xl: clamp(3rem, 2rem + 4vw, 6rem); /* @kind other */     /* 48 → 96px */
+  --wrld-fs-display-lg: clamp(2.25rem, 1.5rem + 3vw, 4.25rem); /* @kind other */ /* 36 → 68 */
+  --wrld-fs-display-md: clamp(1.75rem, 1.25rem + 2vw, 3rem); /* @kind other */   /* 28 → 48 */
+  --wrld-fs-h1: 2.5rem; /* @kind font */    /* 40 */
+  --wrld-fs-h2: 2rem; /* @kind font */      /* 32 */
+  --wrld-fs-h3: 1.5rem; /* @kind font */    /* 24 */
+  --wrld-fs-h4: 1.25rem; /* @kind font */   /* 20 */
+  --wrld-fs-h5: 1.125rem; /* @kind font */  /* 18 */
+  --wrld-fs-h6: 1rem; /* @kind font */      /* 16 */
+  --wrld-fs-body-lg: 1.125rem; /* @kind font */ /* 18 */
+  --wrld-fs-body:    1rem; /* @kind font */     /* 16 */
+  --wrld-fs-body-sm: 0.875rem; /* @kind font */ /* 14 */
+  --wrld-fs-caption: 0.75rem; /* @kind font */  /* 12 */
+
+  /* Weights */
+  --wrld-fw-regular:  400; /* @kind font */
+  --wrld-fw-medium:   500; /* @kind font */
+  --wrld-fw-semibold: 600; /* @kind font */
+  --wrld-fw-bold:     700; /* @kind font */
+
+  /* Line heights */
+  --wrld-lh-display: 1.05; /* @kind font */
+  --wrld-lh-heading: 1.2; /* @kind font */
+  --wrld-lh-body:    1.6; /* @kind font */
+  --wrld-lh-ui:      1.4; /* @kind font */
+
+  /* Letter spacing */
+  --wrld-ls-display:  -0.02em; /* @kind font */
+  --wrld-ls-body:     0; /* @kind font */
+  --wrld-ls-eyebrow:  0.12em; /* @kind font */  /* for uppercase WRLD-as-type, labels */
+  --wrld-ls-caps-xl:  0.28em; /* @kind font */  /* tall, spaced "WRLD" wordmark treatment */
+
+  /* ---------- Spacing (4px base) ---------- */
+  --wrld-space-0:   0;
+  --wrld-space-1:   0.25rem;  /* 4 */
+  --wrld-space-2:   0.5rem;   /* 8 */
+  --wrld-space-3:   0.75rem;  /* 12 */
+  --wrld-space-4:   1rem;     /* 16 */
+  --wrld-space-5:   1.25rem;  /* 20 */
+  --wrld-space-6:   1.5rem;   /* 24 */
+  --wrld-space-8:   2rem;     /* 32 */
+  --wrld-space-10:  2.5rem;   /* 40 */
+  --wrld-space-12:  3rem;     /* 48 */
+  --wrld-space-16:  4rem;     /* 64 */
+  --wrld-space-20:  5rem;     /* 80 */
+  --wrld-space-30:  7.5rem;   /* 120 */
+
+  /* ---------- Radii ---------- */
+  --wrld-radius-0:    0;
+  --wrld-radius-sm:   4px;
+  --wrld-radius-md:   8px;
+  --wrld-radius-lg:   12px;
+  --wrld-radius-pill: 9999px;
+
+  /* ---------- Border widths ---------- */
+  --wrld-border-hairline: 1px; /* @kind other */
+  --wrld-border-standard: 2px; /* @kind other */
+  --wrld-border-emphasis: 3px; /* @kind other */
+
+  /* ---------- Motion ---------- */
+  --wrld-duration-micro:    120ms; /* @kind other */
+  --wrld-duration-default:  200ms; /* @kind other */
+  --wrld-duration-emphasis: 320ms; /* @kind other */
+  --wrld-duration-reveal:   600ms; /* @kind other */
+  --wrld-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1); /* @kind other */
+  --wrld-ease-enter:    cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --wrld-ease-exit:     cubic-bezier(0.4, 0, 1, 1); /* @kind other */
+  --wrld-ease-precise:  cubic-bezier(0.83, 0, 0.17, 1); /* @kind other */
+
+  /* ---------- Z-index ---------- */
+  --wrld-z-base:     0; /* @kind other */
+  --wrld-z-raised:   10; /* @kind other */
+  --wrld-z-sticky:   100; /* @kind other */
+  --wrld-z-overlay:  1000; /* @kind other */
+  --wrld-z-modal:    1100; /* @kind other */
+  --wrld-z-toast:    1200; /* @kind other */
+  --wrld-z-tooltip:  1300; /* @kind other */
+
+  /* ---------- Breakpoints (reference; CSS can't use as @media) ---------- */
+  --wrld-bp-sm:  40rem; /* @kind other */   /* 640 */
+  --wrld-bp-md:  48rem; /* @kind other */   /* 768 */
+  --wrld-bp-lg:  64rem; /* @kind other */   /* 1024 */
+  --wrld-bp-xl:  80rem; /* @kind other */   /* 1280 */
+  --wrld-bp-2xl: 96rem; /* @kind other */   /* 1536 */
+}
+
+/* ============================================================
+   Light mode (default)
+   ============================================================ */
+:root,
+:root[data-theme="light"] {
+  --wrld-bg:           var(--wrld-mono-0);
+  --wrld-bg-subtle:    var(--wrld-mono-50);
+  --wrld-bg-muted:     var(--wrld-mono-100);
+  --wrld-bg-elevated:  var(--wrld-mono-0);
+
+  --wrld-fg:           var(--wrld-mono-950);
+  --wrld-fg-muted:     var(--wrld-mono-600);
+  --wrld-fg-subtle:    var(--wrld-mono-500);
+  --wrld-fg-inverse:   var(--wrld-mono-0);
+
+  --wrld-border:         var(--wrld-mono-200);
+  --wrld-border-strong:  var(--wrld-mono-300);
+
+  --wrld-logo:         var(--wrld-mono-950);   /* dark logo on light bg */
+  --wrld-logo-inverse: var(--wrld-mono-0);
+
+  /* Static shadows — neutral */
+  --wrld-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --wrld-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --wrld-shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px 0 rgb(0 0 0 / 0.04);
+  --wrld-shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.10), 0 4px 8px 0 rgb(0 0 0 / 0.04);
+
+  /* Interactive shadows — tinted with accents */
+  --wrld-shadow-accent-primary:   0 10px 40px -8px rgb(var(--wrld-accent-primary-rgb) / 0.22);
+  --wrld-shadow-accent-secondary: 0 10px 40px -8px rgb(var(--wrld-accent-secondary-rgb) / 0.20);
+  --wrld-shadow-accent-warm:      0 10px 40px -8px rgb(var(--wrld-accent-warm-rgb) / 0.22);
+
+  --wrld-focus-ring: 0 0 0 3px rgb(var(--wrld-accent-primary-rgb) / 0.28);
+}
+
+/* ============================================================
+   Dark mode
+   ============================================================ */
+:root[data-theme="dark"] {
+  --wrld-bg:           var(--wrld-mono-950);
+  --wrld-bg-subtle:    var(--wrld-mono-900);
+  --wrld-bg-muted:     var(--wrld-mono-800);
+  --wrld-bg-elevated:  var(--wrld-mono-900);
+
+  --wrld-fg:           var(--wrld-mono-50);
+  --wrld-fg-muted:     var(--wrld-mono-400);
+  --wrld-fg-subtle:    var(--wrld-mono-500);
+  --wrld-fg-inverse:   var(--wrld-mono-950);
+
+  --wrld-border:         var(--wrld-mono-800);
+  --wrld-border-strong:  var(--wrld-mono-700);
+
+  --wrld-logo:         var(--wrld-mono-0);     /* light logo on dark bg */
+  --wrld-logo-inverse: var(--wrld-mono-950);
+
+  --wrld-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+  --wrld-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.40), 0 1px 2px 0 rgb(0 0 0 / 0.20);
+  --wrld-shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.45), 0 2px 4px 0 rgb(0 0 0 / 0.25);
+  --wrld-shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.55), 0 4px 8px 0 rgb(0 0 0 / 0.25);
+
+  --wrld-shadow-accent-primary:   0 10px 40px -8px rgb(var(--wrld-accent-primary-rgb) / 0.36);
+  --wrld-shadow-accent-secondary: 0 10px 40px -8px rgb(var(--wrld-accent-secondary-rgb) / 0.34);
+  --wrld-shadow-accent-warm:      0 10px 40px -8px rgb(var(--wrld-accent-warm-rgb) / 0.36);
+
+  --wrld-focus-ring: 0 0 0 3px rgb(var(--wrld-accent-primary-rgb) / 0.40);
+}
+
+/* ============================================================
+   Auto — follows OS preference
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --wrld-bg:           var(--wrld-mono-950);
+    --wrld-bg-subtle:    var(--wrld-mono-900);
+    --wrld-bg-muted:     var(--wrld-mono-800);
+    --wrld-bg-elevated:  var(--wrld-mono-900);
+    --wrld-fg:           var(--wrld-mono-50);
+    --wrld-fg-muted:     var(--wrld-mono-400);
+    --wrld-fg-subtle:    var(--wrld-mono-500);
+    --wrld-fg-inverse:   var(--wrld-mono-950);
+    --wrld-border:        var(--wrld-mono-800);
+    --wrld-border-strong: var(--wrld-mono-700);
+    --wrld-logo:         var(--wrld-mono-0);
+    --wrld-logo-inverse: var(--wrld-mono-950);
+    --wrld-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+    --wrld-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.40), 0 1px 2px 0 rgb(0 0 0 / 0.20);
+    --wrld-shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.45), 0 2px 4px 0 rgb(0 0 0 / 0.25);
+    --wrld-shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.55), 0 4px 8px 0 rgb(0 0 0 / 0.25);
+    --wrld-focus-ring: 0 0 0 3px rgb(var(--wrld-accent-primary-rgb) / 0.40);
+  }
+}
+
+/* ============================================================
+   Reduced motion — honor the user
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --wrld-duration-micro:    1ms; /* @kind other */
+    --wrld-duration-default:  1ms; /* @kind other */
+    --wrld-duration-emphasis: 1ms; /* @kind other */
+    --wrld-duration-reveal:   1ms; /* @kind other */
+  }
+}

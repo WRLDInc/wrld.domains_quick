@@ -4,20 +4,30 @@ export interface WHMCSConfig {
   apiSecret: string;
 }
 
-export interface DomainCheckResult {
-  domain: string;
-  status: 'available' | 'unavailable' | 'error';
-  price?: string;
-  period?: string;
-}
-
-export interface DomainCheckResponse {
+/** Raw response of the WHMCS `DomainWhois` API, which checks one domain per call. */
+export interface DomainWhoisResponse {
   result: 'success' | 'error';
-  domains: Record<string, DomainCheckResult>;
+  status?: 'available' | 'unavailable';
+  whois?: string;
   message?: string;
 }
 
-export interface WHMCSClient {
+export type DomainAvailability = 'available' | 'unavailable' | 'error';
+
+export interface DomainCheckResult {
+  domain: string;
+  status: DomainAvailability;
+  message?: string;
+}
+
+/** Shape returned by /api/domains/check. */
+export interface DomainCheckResponse {
+  result: 'success' | 'error';
+  domains: DomainCheckResult[];
+  message?: string;
+}
+
+export interface WHMCSClientDetails {
   email: string;
   firstname: string;
   lastname: string;
@@ -57,7 +67,7 @@ export interface WHMCSTicketsResponse {
 export interface DomainAnalytics {
   domain: string;
   timestamp: string;
-  userAgent?: string;
-  country?: string;
+  userAgent?: string | null;
+  country?: string | null;
   available: boolean;
 }

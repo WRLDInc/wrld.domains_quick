@@ -3,3 +3,13 @@ name = "wrld-domains-quicksite"
 compatibility_date = "2024-11-27"
 pages_build_output_dir = "dist"
 
+# Secrets (set in the Cloudflare dashboard, or in .dev.vars locally):
+#   WHMCS_URL, WHMCS_API_IDENTIFIER, WHMCS_API_SECRET
+# The domain availability check at /api/domains/check needs all three. When
+# they are missing it answers 503 and the search form falls back to WHMCS.
+
+# Optional: search analytics. Uncomment and bind a KV namespace to record
+# each lookup for 90 days. The function works without it.
+# [[kv_namespaces]]
+# binding = "DOMAIN_ANALYTICS"
+# id = "<namespace-id>"

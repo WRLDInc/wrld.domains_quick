@@ -1,18 +1,31 @@
-import { Route, Switch } from 'wouter';
+import { useEffect } from 'react';
+import { Route, Switch, useLocation } from 'wouter';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { AnimatedBackground } from '@/components/AnimatedBackground';
+import { Button } from '@/components/Button';
 import { HomePage } from '@/pages/Home';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
 import { SupportPage } from '@/pages/Support';
+import { usePageTitle } from '@/lib/usePageTitle';
+
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [location]);
+  return null;
+}
 
 export function App() {
   return (
     <>
-      <AnimatedBackground />
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
+      <ScrollToTop />
       <Header />
-      <main className="main-content">
+      <main id="main" tabIndex={-1}>
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/login" component={LoginPage} />
@@ -24,65 +37,31 @@ export function App() {
         </Switch>
       </main>
       <Footer />
-
-      <style>{`
-        .main-content {
-          flex: 1;
-          min-height: calc(100vh - 400px);
-          position: relative;
-          z-index: 1;
-        }
-      `}</style>
     </>
   );
 }
 
 function NotFound() {
+  usePageTitle('Page not found', { canonical: false });
+
   return (
-    <div className="not-found">
+    <section className="not-found">
       <div className="container">
-        <h1>404</h1>
-        <p>Page not found</p>
-        <a href="/" className="home-link">Go Home</a>
+        <div className="eyebrow">404</div>
+        <h1>That page isn’t here.</h1>
+        <p>
+          The address may have moved, or it never existed. The domain you’re after might still be available,
+          though.
+        </p>
+        <div className="handoff-actions">
+          <Button href="/" size="lg">
+            Search domains
+          </Button>
+          <Button href="/support" variant="ghost">
+            Get support
+          </Button>
+        </div>
       </div>
-
-      <style>{`
-        .not-found {
-          padding: 6rem 0;
-          text-align: center;
-        }
-
-        .not-found h1 {
-          font-size: 6rem;
-          font-weight: 900;
-          margin-bottom: 1rem;
-          background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .not-found p {
-          font-size: 1.5rem;
-          color: var(--color-text-secondary);
-          margin-bottom: 2rem;
-        }
-
-        .home-link {
-          display: inline-block;
-          padding: 0.875rem 2rem;
-          font-weight: 600;
-          border-radius: 0.5rem;
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          color: white;
-          transition: all var(--transition-base);
-        }
-
-        .home-link:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md), var(--glow-primary);
-        }
-      `}</style>
-    </div>
+    </section>
   );
 }
