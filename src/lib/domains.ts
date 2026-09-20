@@ -21,7 +21,7 @@ export function normalizeQuery(raw: string): string {
     .trim()
     .toLowerCase()
     .replace(/^[a-z][a-z0-9+.-]*:\/\//, '')
-    .replace(/^www\./, '')
+    .replace(/^www\.(?=.*\.)/, '')
     .split(/[/?#\s]/)[0]
     .replace(/^\.+|\.+$/g, '');
 }
