@@ -1,4 +1,24 @@
-import Gleap from 'gleap';
+/**
+ * Gleap (WRLD Help) is loaded by the snippet in index.html, which matches the
+ * install on wrld.host. Before the SDK arrives, window.Gleap is a queue that
+ * records calls and replays them, so every helper below is safe to call at
+ * any point after page load.
+ */
+
+type GleapLike = {
+  open?: () => void;
+  openHelpCenter?: (showBackButton?: boolean) => void;
+  openConversations?: () => void;
+  identify?: (userId: string, data?: object) => void;
+  clearIdentity?: () => void;
+  trackEvent?: (name: string, data?: Record<string, unknown>) => void;
+  setCustomData?: (key: string, value: string) => void;
+};
+
+function gleap(): GleapLike | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (window as Window & { Gleap?: GleapLike }).Gleap;
+}
 
 export interface GleapUserData {
   name?: string;
@@ -11,53 +31,29 @@ export interface GleapUserData {
   customData?: Record<string, unknown>;
 }
 
-/**
- * Identify a user to Gleap (call after WHMCS login)
- */
+/** Identify a user to Gleap (after a WHMCS sign-in). */
 export function identifyUser(userId: string, userData?: GleapUserData): void {
-  Gleap.identify(userId, userData ?? {});
+  gleap()?.identify?.(userId, userData ?? {});
 }
 
-/**
- * Clear user identity (call on logout)
- */
+/** Clear the identity (on sign-out). */
 export function clearIdentity(): void {
-  Gleap.clearIdentity();
+  gleap()?.clearIdentity?.();
 }
 
-/**
- * Track a custom event
- */
 export function trackEvent(eventName: string, eventData?: Record<string, unknown>): void {
-  Gleap.trackEvent(eventName, eventData);
+  gleap()?.trackEvent?.(eventName, eventData);
 }
 
-/**
- * Open Gleap widget
- */
+/** Open the chat. */
 export function openGleap(): void {
-  Gleap.open();
+  gleap()?.open?.();
 }
 
-/**
- * Open Gleap help center
- */
 export function openHelpCenter(): void {
-  Gleap.openHelpCenter();
+  gleap()?.openHelpCenter?.();
 }
 
-/**
- * Set custom data for support context
- */
 export function setCustomData(key: string, value: string): void {
-  Gleap.setCustomData(key, value);
+  gleap()?.setCustomData?.(key, value);
 }
-
-export default {
-  identifyUser,
-  clearIdentity,
-  trackEvent,
-  openGleap,
-  openHelpCenter,
-  setCustomData,
-};

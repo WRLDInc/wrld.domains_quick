@@ -1,231 +1,98 @@
-import { motion } from 'framer-motion';
-import { openGleap, openHelpCenter } from '@/lib/gleap';
+import { Anchor } from '@/components/Anchor';
+import { LINKS } from '@/lib/links';
+import { openGleap } from '@/lib/gleap';
+import { usePageTitle } from '@/lib/usePageTitle';
+
+interface Option {
+  tag: string;
+  title: string;
+  body: string;
+  foot: string;
+  href?: string;
+  onClick?: () => void;
+}
+
+const OPTIONS: Option[] = [
+  {
+    tag: 'chat',
+    title: 'Chat with us',
+    body: 'Open WRLD Help and talk to a person. Good for quick questions about a search, a transfer, or an order in progress.',
+    foot: 'Opens here',
+    onClick: openGleap,
+  },
+  {
+    tag: 'ticket',
+    title: 'Open a ticket',
+    body: 'For anything that needs a record: DNS changes, transfer authorizations, billing. A person answers, and the thread lands in your client area.',
+    foot: 'wrld.host/submitticket.php',
+    href: LINKS.openTicket,
+  },
+  {
+    tag: 'docs',
+    title: 'Knowledge base',
+    body: 'Step-by-step guides for nameservers, DNS records, transfers, and renewals on WRLD.host.',
+    foot: 'wrld.host/knowledgebase',
+    href: LINKS.knowledgeBase,
+  },
+  {
+    tag: 'account',
+    title: 'Client area',
+    body: 'Manage domains, DNS, contacts, invoices, and existing tickets. Sign in with your WRLD.host account.',
+    foot: 'wrld.host/clientarea.php',
+    href: LINKS.clientArea,
+  },
+];
 
 export function SupportPage() {
+  usePageTitle('Support');
+
   return (
-    <div className="support-page">
-      <div className="container">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="support-content"
-        >
-          <div className="support-header">
-            <h1>Get Support</h1>
-            <p>Our team is here to help you 24/7</p>
+    <>
+      <section className="page-head">
+        <div className="container">
+          <div className="eyebrow reveal">Support</div>
+          <h1 className="reveal reveal-1">Get help with a domain.</h1>
+          <p className="lede reveal reveal-2">
+            Chat, open a ticket, or look it up yourself. Real humans on the other end of every ticket.
+          </p>
+        </div>
+      </section>
+
+      <section className="section" aria-label="Support options">
+        <div className="container">
+          <div className="cards">
+            {OPTIONS.map((option) => {
+              const inner = (
+                <>
+                  <div className="card-tag">{option.tag}</div>
+                  <h2 className="card-title">{option.title}</h2>
+                  <p className="card-body">{option.body}</p>
+                  <div className="card-foot">
+                    <span>{option.foot}</span>
+                    <span aria-hidden="true">{option.href ? '↗' : '→'}</span>
+                  </div>
+                </>
+              );
+              return option.href ? (
+                <Anchor key={option.tag} href={option.href} className="card">
+                  {inner}
+                </Anchor>
+              ) : (
+                <button key={option.tag} type="button" className="card" onClick={option.onClick}>
+                  {inner}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="support-grid">
-            <div className="support-options">
-              <motion.div
-                className="support-card primary"
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="card-icon">💬</div>
-                <h2>Live Chat</h2>
-                <p>Get instant help from our support team. Available 24/7.</p>
-                <button onClick={openGleap} className="support-button primary">
-                  Start Live Chat
-                </button>
-              </motion.div>
-
-              <motion.div
-                className="support-card"
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="card-icon">📚</div>
-                <h2>Help Center</h2>
-                <p>Browse our knowledge base for answers to common questions.</p>
-                <button onClick={openHelpCenter} className="support-button">
-                  Browse Help Center
-                </button>
-              </motion.div>
-
-              <motion.div
-                className="support-card"
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="card-icon">🎫</div>
-                <h2>Submit a Ticket</h2>
-                <p>Create a support ticket for detailed assistance.</p>
-                <a href="https://wrld.host/submitticket.php" className="support-button" target="_blank" rel="noopener noreferrer">
-                  Open Ticket
-                </a>
-              </motion.div>
-
-              <motion.div
-                className="support-card"
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="card-icon">👤</div>
-                <h2>Client Area</h2>
-                <p>Manage your services, domains, and billing.</p>
-                <a href="https://wrld.host/clientarea.php" className="support-button" target="_blank" rel="noopener noreferrer">
-                  Go to Client Area
-                </a>
-              </motion.div>
-            </div>
-
-            <div className="support-links">
-              <h3>Quick Links</h3>
-              <ul>
-                <li><a href="https://wrld.host/knowledgebase.php" target="_blank" rel="noopener noreferrer">Knowledge Base</a></li>
-                <li><a href="https://wrld.host/serverstatus.php" target="_blank" rel="noopener noreferrer">Network Status</a></li>
-                <li><a href="https://wrld.host/announcements.php" target="_blank" rel="noopener noreferrer">Announcements</a></li>
-              </ul>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      <style>{`
-        .support-page {
-          padding: 4rem 0 6rem;
-          min-height: calc(100vh - 400px);
-        }
-
-        .support-header {
-          text-align: center;
-          margin-bottom: 4rem;
-        }
-
-        .support-header h1 {
-          font-size: clamp(2rem, 4vw, 3rem);
-          font-weight: 900;
-          margin-bottom: 1rem;
-        }
-
-        .support-header p {
-          font-size: 1.25rem;
-          color: var(--color-text-secondary);
-        }
-
-        .support-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 3rem;
-        }
-
-        .support-options {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-        }
-
-        .support-card {
-          padding: 2rem;
-          background: var(--color-bg-card);
-          border: 1px solid var(--color-border);
-          border-radius: 1rem;
-          text-align: center;
-          cursor: pointer;
-        }
-
-        .support-card.primary {
-          border-color: var(--color-primary);
-          background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05));
-        }
-
-        .card-icon {
-          font-size: 2.5rem;
-          margin-bottom: 1rem;
-        }
-
-        .support-card h2 {
-          font-size: 1.25rem;
-          font-weight: 700;
-          margin-bottom: 0.75rem;
-        }
-
-        .support-card p {
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-        }
-
-        .support-button {
-          display: inline-block;
-          padding: 0.75rem 1.5rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          border-radius: 0.5rem;
-          background: var(--color-bg-elevated);
-          color: var(--color-text-primary);
-          border: 1px solid var(--color-border);
-          transition: all var(--transition-base);
-          text-decoration: none;
-        }
-
-        .support-button:hover {
-          background: var(--color-bg-hover);
-          border-color: var(--color-primary);
-          color: var(--color-primary);
-        }
-
-        .support-button.primary {
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          color: white;
-          border: none;
-        }
-
-        .support-button.primary:hover {
-          box-shadow: var(--shadow-md), var(--glow-primary);
-          color: white;
-        }
-
-        .support-links {
-          padding: 2rem;
-          background: var(--color-bg-card);
-          border: 1px solid var(--color-border);
-          border-radius: 1rem;
-          text-align: center;
-        }
-
-        .support-links h3 {
-          font-size: 1rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
-          color: var(--color-text-secondary);
-        }
-
-        .support-links ul {
-          list-style: none;
-          display: flex;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 2rem;
-        }
-
-        .support-links a {
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          transition: color var(--transition-fast);
-        }
-
-        .support-links a:hover {
-          color: var(--color-primary);
-        }
-
-        @media (max-width: 768px) {
-          .support-page {
-            padding: 2rem 0 4rem;
-          }
-
-          .support-header {
-            margin-bottom: 2rem;
-          }
-
-          .support-links ul {
-            flex-direction: column;
-            gap: 1rem;
-          }
-        }
-      `}</style>
-    </div>
+          <nav className="quick-links" aria-label="More from WRLD">
+            <a href={LINKS.announcements}>Announcements ↗</a>
+            <a href={LINKS.status}>Service status ↗</a>
+            <a href={LINKS.contact}>Contact WRLD ↗</a>
+            <a href={LINKS.email}>ridge@wrld.tech</a>
+          </nav>
+        </div>
+      </section>
+    </>
   );
 }

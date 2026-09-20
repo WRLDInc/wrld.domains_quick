@@ -1,29 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Fast, secure domain search and registration powered by WRLD.host. Find your perfect domain name in seconds." />
-    <meta name="keywords" content="domain search, domain registration, web hosting, WRLD, domains" />
-    <meta name="author" content="WRLD Inc" />
+    <title>WRLD.domains — Domain search and registration on WRLD.host</title>
+    <meta name="description" content="Search domain availability and register on WRLD.host, the hosting platform run by WRLD Tech Co. Direct platform access, DNS in the same client area, and real humans answering tickets." />
+    <meta name="author" content="WRLD Inc." />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="canonical" href="https://wrld.domains/" />
+
+    <!-- Favicons: the WRLD starburst, straight from the design system -->
+    <link rel="icon" href="/favicons/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Type: self-hosted from the design system. Preload the two faces used above the fold. -->
+    <link rel="preload" href="/fonts/Montserrat-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/Ubuntu-Regular.ttf" as="font" type="font/ttf" crossorigin />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="WRLD.domains - Fast Domain Search" />
-    <meta property="og:description" content="Find your perfect domain name with lightning-fast search powered by WRLD.host" />
+    <meta property="og:site_name" content="WRLD.domains" />
+    <meta property="og:title" content="WRLD.domains — Domain search and registration on WRLD.host" />
+    <meta property="og:description" content="Search domain availability and register on WRLD.host, the hosting platform run by WRLD Tech Co." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://wrld.domains" />
+    <meta property="og:image" content="https://wrld.domains/favicons/android-chrome-512x512.png" />
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="WRLD.domains - Fast Domain Search" />
-    <meta name="twitter:description" content="Find your perfect domain name with lightning-fast search powered by WRLD.host" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="WRLD.domains — Domain search and registration on WRLD.host" />
+    <meta name="twitter:description" content="Search domain availability and register on WRLD.host, the hosting platform run by WRLD Tech Co." />
 
-    <title>WRLD.domains - Fast Domain Search & Registration</title>
-
-    <!-- Gleap.io Widget -->
+    <!-- Theme bootstrap: apply the saved theme before first paint. The design
+         system ships light, dark and auto; auto follows the OS. -->
     <script>
-      !function(Gleap,t,i){if(!(Gleap=window.Gleap=window.Gleap||[]).invoked){for(window.GleapActions=[],Gleap.invoked=!0,Gleap.methods=["identify","setAiTools","track","setFrameUrl","setApiUrl","setWsApiUrl","setCustomData","attachCustomData","setCustomDataValue","removeCustomDataAttribute","clearCustomData","registerCustomAction","setUseCookies","enableShortcuts","showFeedbackButton","setLanguage","setOfflineMode","setNetworkLogPropsToIgnore","setLogLevel","hide","show","close","open","setShowPoweredBy","isOpened","setEnvironment","startSession","setEventCallback","log","preFillForm","setTags","disableConsoleLogOverwrite","setTicketAttribute","setOutboundMessageCallback","on","setOutboundMessagePushCallback","openConversation","openConversations","openNews","openNewsArticle","openHelpCenter","openHelpCenterArticle","openHelpCenterCollection","searchHelpCenter","openFeatureRequests","openChecklist","closeChecklist","trackEvent","openKaiChat","startScreenCapture","showSurvey","sendSilentCrashReport","openBotWithMessage","setAppBuildNumber","setAppVersionCode","setSdkSettings","setInitialPageContext"],Gleap.f=function(e){return function(){var t=Array.prototype.slice.call(arguments);window.GleapActions.push({e:e,a:t})}},t=0;t<Gleap.methods.length;t++)Gleap[i=Gleap.methods[t]]=Gleap.f(i);Gleap.load=function(){var t=document.getElementsByTagName("head")[0],i=document.createElement("script");i.type="text/javascript",i.async=!0,i.src="https://sdk.gleap.io/latest/index.js",t.appendChild(i)},Gleap.load(),Gleap.ready(function(){Gleap.setUseCookies(true);Gleap.initialize("GwUBVVrc0r6XgEthA41dwFXeev3mGB3p")})}}
+      (function () {
+        var theme = 'auto';
+        try {
+          var saved = localStorage.getItem('wrld-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+
+    <!-- Gleap.io Widget (WRLD Help). Same queue stub and app key as wrld.host:
+         calls made before the SDK loads are queued on window.GleapActions and replayed. -->
+    <script>
+      !function(Gleap,t,i){if(!(Gleap=window.Gleap=window.Gleap||[]).invoked){for(window.GleapActions=[],Gleap.invoked=!0,Gleap.methods=["initialize","identify","setAiTools","track","setFrameUrl","setApiUrl","setWsApiUrl","setCustomData","attachCustomData","setCustomDataValue","removeCustomDataAttribute","clearCustomData","registerCustomAction","setUseCookies","enableShortcuts","showFeedbackButton","setLanguage","setOfflineMode","setNetworkLogPropsToIgnore","setLogLevel","hide","show","close","open","setShowPoweredBy","isOpened","setEnvironment","startSession","setEventCallback","log","preFillForm","setTags","disableConsoleLogOverwrite","setTicketAttribute","setOutboundMessageCallback","on","setOutboundMessagePushCallback","openConversation","openConversations","openNews","openNewsArticle","openHelpCenter","openHelpCenterArticle","openHelpCenterCollection","searchHelpCenter","openFeatureRequests","openChecklist","closeChecklist","trackEvent","openKaiChat","startScreenCapture","showSurvey","sendSilentCrashReport","openBotWithMessage","setAppBuildNumber","setAppVersionCode","setSdkSettings","setInitialPageContext"],Gleap.f=function(e){return function(){var t=Array.prototype.slice.call(arguments);window.GleapActions.push({e:e,a:t})}},t=0;t<Gleap.methods.length;t++)Gleap[i=Gleap.methods[t]]=Gleap.f(i);Gleap.load=function(){var t=document.getElementsByTagName("head")[0],i=document.createElement("script");i.type="text/javascript",i.async=!0,i.src="https://sdk.gleap.io/latest/index.js",t.appendChild(i)},Gleap.load(),Gleap.setUseCookies(true),Gleap.initialize("GwUBVVrc0r6XgEthA41dwFXeev3mGB3p")}}();
       (window.Gleap = window.Gleap || []);
     </script>
   </head>

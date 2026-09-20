@@ -19,16 +19,24 @@ npm install
 
 2. **Configure environment**:
 ```bash
-cp .env.example .env
-# Edit .env with your WHMCS credentials
+cp .env.example .dev.vars
+# Edit .dev.vars with your WHMCS credentials (git-ignored; Pages Functions read this file locally)
 ```
 
-3. **Start development server**:
+3. **Start the Functions runtime** (terminal 1). Build once so `dist/` exists, then run the Cloudflare runtime on port 8788:
+```bash
+npm run build
+npm run cf:dev
+```
+
+4. **Start the frontend** (terminal 2):
 ```bash
 npm run dev
 ```
 
-Visit `http://localhost:3000`
+Visit `http://localhost:3000`. Vite proxies `/api/*` to port 8788, so the inline domain search talks to your local Function.
+
+If you skip step 3, every search falls back to the WHMCS cart on wrld.host (the same path the no-JavaScript form takes). Useful for checking the fallback, confusing if you expected inline results.
 
 ## Project Architecture
 
@@ -58,7 +66,7 @@ functions/
 - **TypeScript**: Type safety
 - **Vite**: Build tool and dev server
 - **Wouter**: Lightweight routing (2KB)
-- **Framer Motion**: Animations
+- **WRLD design system**: tokens, type and components (vendored under `src/styles/wrld`)
 - **CSS**: CSS-in-JS via style tags
 
 ### Backend
@@ -181,18 +189,28 @@ const result = await client.checkDomainAvailability(['example.com']);
 
 ## Testing
 
+### Unit Tests
+Request-validation tests for `/api/domains/check` run on Node's built-in runner (Node 22.6+ strips TypeScript natively). They never contact WHMCS.
+```bash
+npm test
+```
+
 ### Manual Testing
 ```bash
-npm run dev
+npm run cf:dev   # terminal 1, after npm run build
+npm run dev      # terminal 2
 # Test in browser
 ```
 
 ### Testing API Endpoints
+With `npm run cf:dev` running:
 ```bash
-# Test domain check
-curl -X POST http://localhost:3000/api/domains/check \
-  -H "Content-Type: application/json" \
-  -d '{"domains": ["example.com", "example.net"]}'
+# Live check (needs .dev.vars)
+curl -X POST http://localhost:8788/api/domains/check   -H "Content-Type: application/json"   -d '{"domains": ["example.com", "example.net"]}'
+
+# Error paths: 400 for bad bodies, 503 without WHMCS secrets, 405 for GET
+curl -X POST http://localhost:8788/api/domains/check -H "Content-Type: application/json" -d 'null'
+curl -i http://localhost:8788/api/domains/check
 ```
 
 ### Testing Production Build
@@ -307,7 +325,10 @@ wrangler tail
 **Solution**: Verify WHMCS API credentials in environment
 
 **Problem**: KV not working
-**Solution**: Check namespace bindings in wrangler.toml
+**Solution**: Check namespace bindings in wrangler.toml (analytics are optional; the check works without KV)
+
+**Problem**: Every search redirects to wrld.host
+**Solution**: The Function on port 8788 isn't running or isn't configured. Start `npm run cf:dev` and make sure `.dev.vars` has the WHMCS credentials.
 
 **Problem**: Build fails
 **Solution**: Clear cache, reinstall dependencies

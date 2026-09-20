@@ -17,7 +17,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'animation': ['framer-motion'],
         },
       },
     },
@@ -25,6 +24,8 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // Pages Functions run under `npm run cf:dev` on 8788. When that isn't
+      // running the /api proxy fails and the search falls back to WHMCS.
       '/api': {
         target: 'http://localhost:8788',
         changeOrigin: true,

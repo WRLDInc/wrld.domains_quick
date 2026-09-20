@@ -1,173 +1,159 @@
-import { motion } from 'framer-motion';
-import { Link } from 'wouter';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
+import { useLocation } from 'wouter';
+import { Menu, X } from 'lucide-react';
+import { Lockup } from './Lockup';
 import { ThemeToggle } from './ThemeToggle';
+import { Button } from './Button';
+import { LINKS } from '@/lib/links';
 
+interface NavItem {
+  id: string;
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+const NAV: NavItem[] = [
+  { id: 'search', label: 'Search', href: '/' },
+  { id: 'transfer', label: 'Transfer', href: LINKS.transferDomain, external: true },
+  { id: 'support', label: 'Support', href: '/support' },
+];
+
+/**
+ * Sticky 64px top nav after ui_kits/wrld-tech/Header.jsx: lockup left,
+ * uppercase micro-labels centre with a single traveling underline, actions
+ * right. Collapses to a drawer under 900px.
+ */
 export function Header() {
-  return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="header"
-    >
-      <div className="container">
-        <div className="header-content">
-          <Link href="/" className="logo">
-            <motion.span
-              className="logo-text gradient-text"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: 'spring', stiffness: 400 }}
-            >
-              WRLD
-            </motion.span>
-            <span className="logo-domain">.domains</span>
-          </Link>
+  const [location, navigate] = useLocation();
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
 
-          <nav className="nav">
-            <Link href="/login" className="nav-link">
-              Login
-            </Link>
-            <Link href="/register" className="nav-link">
-              Register
-            </Link>
-            <Link href="/support" className="nav-link">
-              Support
-            </Link>
-            <ThemeToggle />
+  const activeId = NAV.find((n) => !n.external && n.href === location)?.id ?? null;
+  const targetId = hoverId ?? activeId;
+
+  const measure = useCallback(() => {
+    const el = targetId ? itemRefs.current[targetId] : null;
+    const nav = navRef.current;
+    if (!el || !nav) {
+      setIndicator((s) => ({ ...s, opacity: 0 }));
+      return;
+    }
+    const er = el.getBoundingClientRect();
+    const nr = nav.getBoundingClientRect();
+    setIndicator({ left: er.left - nr.left, width: er.width, opacity: 1 });
+  }, [targetId]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(nav);
+    window.addEventListener('resize', measure);
+    // Label widths change once Montserrat/Ubuntu land.
+    document.fonts?.ready.then(() => measure()).catch(() => undefined);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [measure]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location]);
+
+  const internal = (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    navigate(href);
+  };
+
+  return (
+    <header className="site-header">
+      <div className="container header-inner">
+        <a href="/" className="lockup-link" onClick={internal('/')} aria-label="WRLD.domains home">
+          <Lockup sub="DOMAINS" size={18} />
+        </a>
+
+        <nav ref={navRef} className="nav" aria-label="Primary" onMouseLeave={() => setHoverId(null)}>
+          <span
+            aria-hidden="true"
+            className="nav-indicator"
+            style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
+          />
+          {NAV.map((item) => (
             <a
-              href="https://wrld.host"
-              className="nav-link-cta"
-              target="_blank"
-              rel="noopener noreferrer"
+              key={item.id}
+              ref={(el) => {
+                itemRefs.current[item.id] = el;
+              }}
+              href={item.href}
+              className="nav-item"
+              aria-current={activeId === item.id ? 'page' : undefined}
+              onMouseEnter={() => setHoverId(item.id)}
+              onFocus={() => setHoverId(item.id)}
+              onBlur={() => setHoverId(null)}
+              onClick={item.external ? undefined : internal(item.href)}
             >
-              WRLD.host →
+              {item.label}
+              {item.external ? <span className="arrow" aria-hidden="true">↗</span> : null}
             </a>
-          </nav>
+          ))}
+        </nav>
+
+        <div className="header-actions">
+          <ThemeToggle />
+          <Button href={LINKS.clientArea} variant="secondary">
+            Client area <span className="arrow" aria-hidden="true">↗</span>
+          </Button>
+          <Button href={LINKS.signIn} variant="primary">
+            Sign in
+          </Button>
+          <button
+            type="button"
+            className="menu-btn"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <X size={16} strokeWidth={1.5} aria-hidden="true" /> : <Menu size={16} strokeWidth={1.5} aria-hidden="true" />}
+          </button>
         </div>
       </div>
 
-      <style>{`
-        .header {
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          border-bottom: 1px solid var(--color-border);
-          backdrop-filter: blur(12px) saturate(180%);
-          background: var(--color-bg);
-        }
-
-        [data-theme="dark"] .header {
-          background: rgba(10, 10, 10, 0.8);
-        }
-
-        [data-theme="light"] .header {
-          background: rgba(255, 255, 255, 0.8);
-        }
-
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.25rem 0;
-        }
-
-        .logo {
-          display: flex;
-          align-items: baseline;
-          gap: 0.25rem;
-          font-weight: 900;
-          font-size: 1.75rem;
-          letter-spacing: -0.03em;
-          transition: all var(--transition-base);
-        }
-
-        .logo:hover {
-          transform: translateY(-2px);
-        }
-
-        .logo-text {
-          background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .logo-domain {
-          color: var(--color-text-primary);
-          font-weight: 700;
-        }
-
-        .nav {
-          display: flex;
-          align-items: center;
-          gap: 2rem;
-        }
-
-        .nav-link {
-          color: var(--color-text-secondary);
-          font-weight: 500;
-          transition: color var(--transition-fast);
-          position: relative;
-        }
-
-        .nav-link:hover {
-          color: var(--color-text-primary);
-        }
-
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: var(--color-primary);
-          transition: width var(--transition-base);
-        }
-
-        .nav-link:hover::after {
-          width: 100%;
-        }
-
-        .nav-link-cta {
-          padding: 0.625rem 1.5rem;
-          font-weight: 600;
-          border-radius: 0.5rem;
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          color: white;
-          transition: all var(--transition-base);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .nav-link-cta:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md), var(--glow-primary);
-        }
-
-        @media (max-width: 768px) {
-          .header-content {
-            padding: 1rem 0;
-          }
-
-          .logo {
-            font-size: 1.5rem;
-          }
-
-          .nav {
-            gap: 1rem;
-          }
-
-          .nav-link {
-            display: none;
-          }
-
-          .nav-link-cta {
-            display: block;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-          }
-        }
-      `}</style>
-    </motion.header>
+      <div id="mobile-nav" className={`drawer${open ? ' open' : ''}`} aria-hidden={!open}>
+        <div className="container drawer-inner">
+          {NAV.map((item) => (
+            <a
+              key={item.id}
+              href={item.href}
+              className="drawer-link"
+              aria-current={activeId === item.id ? 'page' : undefined}
+              onClick={item.external ? undefined : internal(item.href)}
+              tabIndex={open ? 0 : -1}
+            >
+              <span>{item.label}</span>
+              {item.external ? <span className="meta">wrld.host ↗</span> : null}
+            </a>
+          ))}
+          <div className="drawer-actions">
+            <Button href={LINKS.clientArea} variant="secondary" tabIndex={open ? 0 : -1}>
+              Client area ↗
+            </Button>
+            <Button href={LINKS.signIn} tabIndex={open ? 0 : -1}>
+              Sign in
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
   );
 }

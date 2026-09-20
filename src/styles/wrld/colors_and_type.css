@@ -1,0 +1,330 @@
+/* ============================================================
+   WRLD.Tech Design System — colors_and_type.css
+   Self-contained type + color foundation. Pairs with tokens/tokens.css
+   for the full token suite (radii, shadows, motion, z-index, breakpoints).
+
+   - Imports the four typefaces from /fonts.
+   - Re-declares the canonical color + type vars so this single file is
+     drop-in usable on its own.
+   - Provides semantic element styles (h1-h6, p, code, eyebrow, etc).
+   ============================================================ */
+
+/* -------- Fonts -------- */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('/fonts/Montserrat-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu Mono';
+  src: url('/fonts/UbuntuMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu Mono';
+  src: url('/fonts/UbuntuMono-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   COLOR TOKENS
+   - Source-of-truth monochrome scale
+   - Three legacy interactive accents (#007fee, #00adee, #EE9300)
+   - Light + Dark semantic surfaces
+   ============================================================ */
+:root {
+  /* Monochrome scale */
+  --mono-0:   #ffffff;
+  --mono-50:  #fafafa;
+  --mono-100: #f4f4f5;
+  --mono-200: #e4e4e7;
+  --mono-300: #d4d4d8;
+  --mono-400: #a1a1aa;
+  --mono-500: #71717a;
+  --mono-600: #52525b;
+  --mono-700: #3f3f46;
+  --mono-800: #27272a;
+  --mono-900: #18181b;
+  --mono-950: #0a0a0a; /* signature near-black anchor */
+
+  /* Interactive accents (hover / focus / motion only — never static fills) */
+  --accent-primary:       #007fee; /* WRLD blue — default hover/focus */
+  --accent-primary-rgb:   0 127 238; /* @kind color */
+  --accent-secondary:     #00adee; /* sky blue — gradient companion */
+  --accent-secondary-rgb: 0 173 238; /* @kind color */
+  --accent-warm:          #EE9300; /* orange — commerce/sales CTA */
+  --accent-warm-rgb:      238 147 0; /* @kind color */
+
+  --accent-gradient: linear-gradient(
+    90deg,
+    var(--accent-primary) 0%,
+    var(--accent-secondary) 50%,
+    var(--accent-warm) 100%
+  ); /* @kind color */
+
+  /* Status (system semantic, not brand) */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger:  #ef4444;
+  --status-info:    #3b82f6;
+
+  /* Type families */
+  --font-display: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --font-body:    'Ubuntu', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Ubuntu Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale */
+  --fs-display-xl: clamp(3rem, 2rem + 4vw, 6rem); /* @kind other */     /* 48 → 96 */
+  --fs-display-lg: clamp(2.25rem, 1.5rem + 3vw, 4.25rem); /* @kind other */ /* 36 → 68 */
+  --fs-display-md: clamp(1.75rem, 1.25rem + 2vw, 3rem); /* @kind other */   /* 28 → 48 */
+  --fs-h1: 2.5rem; /* @kind font */     /* 40 */
+  --fs-h2: 2rem; /* @kind font */       /* 32 */
+  --fs-h3: 1.5rem; /* @kind font */     /* 24 */
+  --fs-h4: 1.25rem; /* @kind font */    /* 20 */
+  --fs-h5: 1.125rem; /* @kind font */   /* 18 */
+  --fs-h6: 1rem; /* @kind font */       /* 16 */
+  --fs-body-lg: 1.125rem; /* @kind font */ /* 18 */
+  --fs-body:    1rem; /* @kind font */     /* 16 */
+  --fs-body-sm: 0.875rem; /* @kind font */ /* 14 */
+  --fs-caption: 0.75rem; /* @kind font */  /* 12 */
+
+  --fw-light:    300; /* @kind font */
+  --fw-regular:  400; /* @kind font */
+  --fw-medium:   500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+
+  --lh-display: 1.05; /* @kind font */
+  --lh-heading: 1.2; /* @kind font */
+  --lh-body:    1.6; /* @kind font */
+  --lh-ui:      1.4; /* @kind font */
+
+  --ls-display: -0.02em; /* @kind font */
+  --ls-body:     0; /* @kind font */
+  --ls-eyebrow:  0.12em; /* @kind font */  /* uppercase WRLD-as-type, eyebrow labels */
+  --ls-caps-xl:  0.28em; /* @kind font */  /* tall, spaced WRLD wordmark treatment */
+}
+
+/* -------- Semantic surfaces — light (default) -------- */
+:root,
+:root[data-theme="light"] {
+  --bg:           var(--mono-0);
+  --bg-subtle:    var(--mono-50);
+  --bg-muted:     var(--mono-100);
+  --bg-elevated:  var(--mono-0);
+
+  --fg:           var(--mono-950);
+  --fg-muted:     var(--mono-600);
+  --fg-subtle:    var(--mono-500);
+  --fg-inverse:   var(--mono-0);
+
+  --border:        var(--mono-200);
+  --border-strong: var(--mono-300);
+
+  --logo:         var(--mono-950); /* dark logo on light surfaces */
+  --logo-inverse: var(--mono-0);
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px 0 rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.10), 0 4px 8px 0 rgb(0 0 0 / 0.04);
+
+  --shadow-accent-primary:   0 10px 40px -8px rgb(var(--accent-primary-rgb) / 0.22);
+  --shadow-accent-secondary: 0 10px 40px -8px rgb(var(--accent-secondary-rgb) / 0.20);
+  --shadow-accent-warm:      0 10px 40px -8px rgb(var(--accent-warm-rgb) / 0.22);
+  --focus-ring: 0 0 0 3px rgb(var(--accent-primary-rgb) / 0.28);
+}
+
+/* -------- Semantic surfaces — dark -------- */
+:root[data-theme="dark"] {
+  --bg:           var(--mono-950);
+  --bg-subtle:    var(--mono-900);
+  --bg-muted:     var(--mono-800);
+  --bg-elevated:  var(--mono-900);
+
+  --fg:           var(--mono-50);
+  --fg-muted:     var(--mono-400);
+  --fg-subtle:    var(--mono-500);
+  --fg-inverse:   var(--mono-950);
+
+  --border:        var(--mono-800);
+  --border-strong: var(--mono-700);
+
+  --logo:         var(--mono-0); /* light logo on dark surfaces */
+  --logo-inverse: var(--mono-950);
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.40), 0 1px 2px 0 rgb(0 0 0 / 0.20);
+  --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.45), 0 2px 4px 0 rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.55), 0 4px 8px 0 rgb(0 0 0 / 0.25);
+
+  --shadow-accent-primary:   0 10px 40px -8px rgb(var(--accent-primary-rgb) / 0.36);
+  --shadow-accent-secondary: 0 10px 40px -8px rgb(var(--accent-secondary-rgb) / 0.34);
+  --shadow-accent-warm:      0 10px 40px -8px rgb(var(--accent-warm-rgb) / 0.36);
+  --focus-ring: 0 0 0 3px rgb(var(--accent-primary-rgb) / 0.40);
+}
+
+/* -------- Semantic surfaces — auto follows the OS --------
+   Mirrors the [data-theme="dark"] block above, the same way
+   tokens.css resolves data-theme="auto" against prefers-color-scheme.
+   Keep the two blocks identical. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --bg:           var(--mono-950);
+    --bg-subtle:    var(--mono-900);
+    --bg-muted:     var(--mono-800);
+    --bg-elevated:  var(--mono-900);
+
+    --fg:           var(--mono-50);
+    --fg-muted:     var(--mono-400);
+    --fg-subtle:    var(--mono-500);
+    --fg-inverse:   var(--mono-950);
+
+    --border:        var(--mono-800);
+    --border-strong: var(--mono-700);
+
+    --logo:         var(--mono-0); /* light logo on dark surfaces */
+    --logo-inverse: var(--mono-950);
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.40), 0 1px 2px 0 rgb(0 0 0 / 0.20);
+    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.45), 0 2px 4px 0 rgb(0 0 0 / 0.25);
+    --shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.55), 0 4px 8px 0 rgb(0 0 0 / 0.25);
+
+    --shadow-accent-primary:   0 10px 40px -8px rgb(var(--accent-primary-rgb) / 0.36);
+    --shadow-accent-secondary: 0 10px 40px -8px rgb(var(--accent-secondary-rgb) / 0.34);
+    --shadow-accent-warm:      0 10px 40px -8px rgb(var(--accent-warm-rgb) / 0.36);
+    --focus-ring: 0 0 0 3px rgb(var(--accent-primary-rgb) / 0.40);
+  }
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES
+   ============================================================ */
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6, .display, .display-lg, .display-md {
+  font-family: var(--font-display);
+  letter-spacing: var(--ls-display);
+  color: var(--fg);
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+
+.display    { font-size: var(--fs-display-xl); font-weight: var(--fw-semibold); line-height: var(--lh-display); }
+.display-lg { font-size: var(--fs-display-lg); font-weight: var(--fw-semibold); line-height: var(--lh-display); }
+.display-md { font-size: var(--fs-display-md); font-weight: var(--fw-semibold); line-height: var(--lh-display); }
+
+h1 { font-size: var(--fs-h1); font-weight: var(--fw-semibold); line-height: var(--lh-heading); }
+h2 { font-size: var(--fs-h2); font-weight: var(--fw-semibold); line-height: var(--lh-heading); }
+h3 { font-size: var(--fs-h3); font-weight: var(--fw-semibold); line-height: var(--lh-heading); }
+h4 { font-size: var(--fs-h4); font-weight: var(--fw-medium);   line-height: var(--lh-heading); }
+h5 { font-size: var(--fs-h5); font-weight: var(--fw-medium);   line-height: var(--lh-heading); }
+h6 { font-size: var(--fs-h6); font-weight: var(--fw-medium);   line-height: var(--lh-heading); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; }
+
+p, .body {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  margin: 0 0 1em;
+  text-wrap: pretty;
+}
+.body-lg { font-size: var(--fs-body-lg); }
+.body-sm { font-size: var(--fs-body-sm); }
+.caption { font-size: var(--fs-caption); color: var(--fg-muted); }
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* WRLD wordmark-as-type — tall, ultra-spaced caps treatment */
+.wordmark-type {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps-xl);
+  text-transform: uppercase;
+}
+
+code, kbd, samp, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}
+code {
+  background: var(--bg-muted);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+pre {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  line-height: 1.55;
+}
+pre code { background: transparent; padding: 0; border: 0; }
+
+a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  transition: color 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+a:hover { color: var(--accent-primary); }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 32px 0;
+}
+
+::selection { background: rgb(var(--accent-primary-rgb) / 0.25); color: var(--fg); }

@@ -1,21 +1,18 @@
 import { Hero } from '@/components/Hero';
-import { DomainSearch } from '@/components/DomainSearch';
+import { HowItWorks } from '@/components/HowItWorks';
+import { WhyHost } from '@/components/WhyHost';
+import { CTABand } from '@/components/CTABand';
+import { usePageTitle } from '@/lib/usePageTitle';
 
 export function HomePage() {
-  return (
-    <div className="home-page">
-      <Hero />
-      <section className="search-section">
-        <div className="container">
-          <DomainSearch />
-        </div>
-      </section>
+  usePageTitle();
 
-      <style>{`
-        .search-section {
-          padding: 0 0 6rem;
-        }
-      `}</style>
-    </div>
+  return (
+    <>
+      <Hero />
+      <HowItWorks />
+      <WhyHost />
+      <CTABand />
+    </>
   );
 }

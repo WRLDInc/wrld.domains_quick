@@ -22,8 +22,8 @@
 - **Domain pricing** (GetTLDPricing)
 
 ### 3. User Interface
-- **Modern, clean design** with gradient accents
-- **Smooth animations** using Framer Motion
+- **Monochrome, minimalist design** from the WRLD design system; accents on hover only
+- **Tight, precise motion** using the design system easing and duration tokens
 - **Fully responsive** across all device sizes
 - **Dark theme** with high contrast for readability
 - **Glass morphism effects** and subtle grid patterns
@@ -61,7 +61,7 @@
 - **React 18** with TypeScript
 - **Vite** for blazing-fast development and builds
 - **Wouter** for lightweight client-side routing (2KB)
-- **Framer Motion** for smooth animations
+- **WRLD design system** (wrld.design) for tokens, type and components
 - **CSS Custom Properties** for theming
 
 ### Backend Stack
@@ -117,12 +117,12 @@ wrld.domains_quick/
 - **Error**: Red (#ef4444)
 
 ### Typography
-- **Sans-serif**: Inter - Clean, modern body text
-- **Monospace**: JetBrains Mono - Domain names and code
+- **Display**: Montserrat - headings and the wordmark
+- **Body**: Ubuntu; **Mono**: Ubuntu Mono for domain names, tags and legal lines
 - **Font sizes**: Responsive clamp() for fluid typography
 
 ### Effects
-- **Gradients**: Primary to accent for CTAs
+- **Accents**: #00adee on hover, #EE9300 on commerce CTAs; never as static fills
 - **Glow effects**: Soft shadows on interactive elements
 - **Glass morphism**: Subtle backdrop blur
 - **Grid patterns**: Background texture at 3% opacity

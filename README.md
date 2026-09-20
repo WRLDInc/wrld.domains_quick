@@ -13,7 +13,7 @@ A modern, lightning-fast domain search interface built with React, TypeScript, a
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Framer Motion
+- **Frontend**: React 18, TypeScript, styled with the WRLD design system (https://wrld.design)
 - **Routing**: Wouter (lightweight React router)
 - **Build Tool**: Vite
 - **Deployment**: Cloudflare Pages + Workers
@@ -82,12 +82,12 @@ cd wrld.domains_quick
 npm install
 ```
 
-3. Create a `.env` file based on `.env.example`:
+3. Create `.dev.vars` from the example. Pages Functions read their bindings from this file locally (it is git-ignored):
 ```bash
-cp .env.example .env
+cp .env.example .dev.vars
 ```
 
-4. Configure your WHMCS API credentials in `.env`:
+4. Put your WHMCS API credentials in `.dev.vars`:
 ```env
 WHMCS_URL=https://wrld.host
 WHMCS_API_IDENTIFIER=your_api_identifier
@@ -96,12 +96,27 @@ WHMCS_API_SECRET=your_api_secret
 
 ### Development
 
-Run the development server:
+The inline availability check on the home page calls `/api/domains/check`, a Pages Function. Vite proxies `/api/*` to the Cloudflare runtime on port 8788, so local development needs two processes.
+
+Terminal 1, the Functions runtime (build once first so `dist/` exists; Functions reload on change):
+```bash
+npm run build
+npm run cf:dev
+```
+
+Terminal 2, the frontend with hot reload:
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app is at `http://localhost:3000`. Searches hit your local Function, which calls WHMCS with the credentials in `.dev.vars`.
+
+**Testing the fallback on purpose.** If the Function is unreachable, not configured (no `.dev.vars`, answers 503), or slow, the search form submits straight to the WHMCS cart on wrld.host instead. Running only `npm run dev` exercises exactly that path, and every search will leave the page for wrld.host. That is expected behaviour, not a bug.
+
+Run the request-validation tests for the check endpoint with:
+```bash
+npm test
+```
 
 ### Building
 
