@@ -13,8 +13,8 @@ export function whmcsProvider(config: WHMCSConfig): AvailabilityProvider {
   return {
     id: 'whmcs',
     batchSize: 1,
-    check(domains) {
-      return client.checkDomains(domains);
+    check(domains, signal) {
+      return client.checkDomains(domains, signal);
     },
   };
 }

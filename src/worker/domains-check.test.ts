@@ -124,14 +124,18 @@ test('prices appear only when direct checkout would charge exactly that', () => 
     STRIPE_SECRET_KEY: 'sk_test_1',
     STRIPE_WEBHOOK_SECRET: 'whsec_1',
     ORDERS: fakeKv(),
+    ORDER_WEBHOOK_URL: 'https://hooks.slack.test/orders',
     CF_ACCOUNT_ID: 'a',
     CF_REGISTRAR_API_TOKEN: 't',
   });
   const on = checkoutSettings(direct);
+  assert.equal(on.direct.enabled, true);
   assert.deepEqual(publicResult({ domain: 'a.com', status: 'available', source: 'cloudflare', cost }, direct, on).price, {
     amount: 1346,
     currency: 'USD',
   });
+  // .ai has a two-year registry minimum, so quick checkout never prices it.
+  assert.equal(publicResult({ domain: 'a.ai', status: 'available', source: 'cloudflare', cost }, direct, on).price, undefined);
   // Premium, RDAP-sourced, taken, or direct checkout off → no price.
   assert.equal(publicResult({ domain: 'a.com', status: 'available', source: 'cloudflare', premium: true, cost }, direct, on).price, undefined);
   assert.equal(publicResult({ domain: 'a.com', status: 'available', source: 'rdap' }, direct, on).price, undefined);

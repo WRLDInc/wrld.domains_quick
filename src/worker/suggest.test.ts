@@ -64,11 +64,12 @@ test('route: 405 on GET, 400 on a thin description, 503 when no engine is config
   const env = baseEnv();
   const get = await handleSuggest(new Request('https://wrld.domains/api/domains/suggest'), env, ctx);
   assert.equal(get.status, 405);
+  const stub: SuggestEngine = { label: 'claude:stub', generate: async () => ({ engine: 'claude:stub', suggestions: [] }) };
   const thin = await handleSuggest(
     new Request('https://wrld.domains/api/domains/suggest', { method: 'POST', body: '{"description":"hi"}' }),
     env,
     ctx,
-    { fetch, engine: null },
+    { fetch, engine: stub },
   );
   assert.equal(thin.status, 400);
   const none = await handleSuggest(

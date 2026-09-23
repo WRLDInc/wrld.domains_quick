@@ -25,12 +25,22 @@ export function fakeFetch(routes: [string | RegExp, Handler][]): FakeFetch {
 export const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+/**
+ * In-memory KV that also enforces Cloudflare's limit of one write per second
+ * per key (real KV answers a faster second write with a 429), so a handler
+ * that writes the same key twice in one request fails here too.
+ */
 export function fakeKv(): KVNamespace & { store: Map<string, string> } {
   const store = new Map<string, string>();
+  const lastWrite = new Map<string, number>();
   return {
     store,
     get: async (key: string) => store.get(key) ?? null,
     put: async (key: string, value: string) => {
+      const now = Date.now();
+      const prev = lastWrite.get(key);
+      if (prev !== undefined && now - prev < 1000) throw new Error('KV PUT failed: 429 Too Many Requests');
+      lastWrite.set(key, now);
       store.set(key, value);
     },
   } as unknown as KVNamespace & { store: Map<string, string> };

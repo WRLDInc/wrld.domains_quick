@@ -32,9 +32,14 @@ function DomainName({ domain }: { domain: string }) {
   );
 }
 
+/**
+ * The rows themselves aren't a live region: streaming would re-announce the
+ * whole list on every update. Each panel owns one persistent role="status"
+ * summary instead.
+ */
 export function SearchResults({ rows, config, onRegister, note }: SearchResultsProps) {
   return (
-    <div aria-live="polite">
+    <div>
       <ul className="results">
         {rows.map((row) => (
           <li key={row.domain} className="result">
@@ -71,8 +76,9 @@ function RowAction({ row, config, onRegister }: { row: Row; config: PublicConfig
         </Button>
       );
     case 'likely':
+      // RDAP can't see reserved or premium names, so WHMCS checks (and prices) it before it reaches the cart.
       return (
-        <Button href={cartUrl('register', row.domain)} variant="warm" size="sm" onClick={track('register_whmcs')}>
+        <Button href={cartUrl('register', row.domain, { lookup: true })} variant="warm" size="sm" onClick={track('register_whmcs_lookup')}>
           Register <span className="arrow" aria-hidden="true">↗</span>
         </Button>
       );

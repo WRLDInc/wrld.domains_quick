@@ -35,38 +35,43 @@ export async function handleSuggest(
 ): Promise<Response> {
   if (request.method !== 'POST') return json({ result: 'error', message: 'Use POST.' }, 405, { Allow: 'POST' });
 
+  const engine = deps.engine !== undefined ? deps.engine : suggestEngine(env);
+  if (!engine) return json({ result: 'error', message: 'AI suggestions are not configured.' }, 503);
+
+  // Limit before reading the body: this route spends money per call.
+  if (!(await allowRequest(env.SUGGEST_LIMITER, clientIp(request)))) return tooMany();
+
   const payload = await readJsonObject(request);
   const description = cleanDescription(payload?.description);
   if (description.length < MIN_DESCRIPTION) {
     return json({ result: 'error', message: 'Tell us a little about the business. A sentence is plenty.' }, 400);
   }
 
-  const engine = deps.engine !== undefined ? deps.engine : suggestEngine(env);
-  if (!engine) return json({ result: 'error', message: 'AI suggestions are not configured.' }, 503);
-
-  if (!(await allowRequest(env.SUGGEST_LIMITER, clientIp(request)))) return tooMany();
-
   const providers = buildProviders(env, deps.fetch);
   const settings = checkoutSettings(env);
   const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
+  // If the visitor leaves, stop the model call and the availability checks too.
+  const signal = request.signal;
 
   if (wantsNdjson(request)) {
     return ndjson(async (send) => {
-      const generated = await engine.generate({ description });
+      const generated = await engine.generate({ description }, signal);
       send({ type: 'suggestions', engine: generated.engine, suggestions: generated.suggestions });
       const domains = generated.suggestions.map((s) => s.domain);
       if (domains.length && providers.length) {
         await checkWithCache(domains, providers, (r) => send({ type: 'result', result: publicResult(r, env, settings) }), {
           waitUntil,
+          signal,
         });
       }
       send({ type: 'done' });
     }, waitUntil);
   }
 
-  const generated = await engine.generate({ description });
+  const generated = await engine.generate({ description }, signal);
   const domains = generated.suggestions.map((s) => s.domain);
-  const results = domains.length && providers.length ? await checkWithCache(domains, providers, () => undefined, { waitUntil }) : [];
+  const results =
+    domains.length && providers.length ? await checkWithCache(domains, providers, () => undefined, { waitUntil, signal }) : [];
   const byDomain = new Map(results.map((r) => [r.domain, publicResult(r, env, settings)]));
   return json({
     result: 'success',

@@ -69,6 +69,8 @@ export interface CheckoutSettings {
     tlds: string[];
     /** True only when REGISTRAR_LIVE is exactly "true"; otherwise paid orders are recorded, not registered. */
     live: boolean;
+    /** A paid order would create a real, billed registration (live flag on and not the sandbox). */
+    realRegistrations: boolean;
     /** The Stripe key is a test/sandbox key. */
     testMode: boolean;
     /** Why direct checkout is off, for the logs and DEPLOYMENT.md checklist. */
@@ -76,39 +78,59 @@ export interface CheckoutSettings {
   };
 }
 
+/**
+ * TLDs whose registry minimum term is longer than the one year direct
+ * checkout sells (Cloudflare documents .ai as two years). They stay on WRLD.host.
+ */
+export const MIN_TERM_OVER_ONE_YEAR = new Set(['ai']);
+
 export function checkoutSettings(env: CloudflareEnv): CheckoutSettings {
   const raw = env.CHECKOUT_MODE?.trim().toLowerCase();
   const mode: CheckoutMode = raw === 'direct' || raw === 'both' ? raw : 'whmcs';
   const provider: FulfillmentProvider | null = (env.FULFILLMENT_PROVIDER ?? 'cloudflare') === 'cloudflare' ? 'cloudflare' : null;
+  const key = env.STRIPE_SECRET_KEY ?? '';
+  const testMode = key.startsWith('sk_test_') || key.startsWith('rk_test_');
+  const live = flag(env.REGISTRAR_LIVE);
+  const realRegistrations = live && !flag(env.CF_REGISTRAR_SANDBOX);
 
   const missing: string[] = [];
   if (mode === 'whmcs') missing.push('CHECKOUT_MODE=direct|both');
   if (!env.STRIPE_SECRET_KEY) missing.push('STRIPE_SECRET_KEY');
   if (!env.STRIPE_WEBHOOK_SECRET) missing.push('STRIPE_WEBHOOK_SECRET');
   if (!env.ORDERS) missing.push('ORDERS (KV binding)');
+  // Orders that stop for review must reach a person, or "our team was notified" is a lie.
+  if (!env.ORDER_WEBHOOK_URL) missing.push('ORDER_WEBHOOK_URL');
   if (!provider) missing.push('FULFILLMENT_PROVIDER=cloudflare');
   if (provider === 'cloudflare' && !(env.CF_ACCOUNT_ID && env.CF_REGISTRAR_API_TOKEN)) {
     missing.push('CF_ACCOUNT_ID + CF_REGISTRAR_API_TOKEN');
   }
+  // Test money must never buy a real domain, and real money must never end in a dry run.
+  if (key && testMode === realRegistrations) {
+    missing.push(
+      testMode
+        ? 'mode mismatch: Stripe test key with a live registrar (set CF_REGISTRAR_SANDBOX=true or REGISTRAR_LIVE=false)'
+        : 'mode mismatch: live Stripe key without a live registrar (CF_REGISTRAR_SANDBOX=false and REGISTRAR_LIVE=true)',
+    );
+  }
 
-  const key = env.STRIPE_SECRET_KEY ?? '';
   return {
     mode,
     direct: {
       enabled: missing.length === 0,
       provider,
       tlds: list(env.DIRECT_TLDS),
-      live: flag(env.REGISTRAR_LIVE),
-      testMode: key.startsWith('sk_test_') || key.startsWith('rk_test_'),
+      live,
+      realRegistrations,
+      testMode,
       missing,
     },
   };
 }
 
-/** Direct checkout can sell this TLD (all TLDs when DIRECT_TLDS is empty). */
+/** Direct checkout can sell this TLD (all one-year TLDs when DIRECT_TLDS is empty). */
 export function directAllowsTld(settings: CheckoutSettings, tld: string): boolean {
   const { enabled, tlds } = settings.direct;
-  return enabled && (tlds.length === 0 || tlds.includes(tld));
+  return enabled && !MIN_TERM_OVER_ONE_YEAR.has(tld) && (tlds.length === 0 || tlds.includes(tld));
 }
 
 export function publicConfig(env: CloudflareEnv): PublicConfig {
@@ -120,7 +142,11 @@ export function publicConfig(env: CloudflareEnv): PublicConfig {
     suggest: { enabled: engine !== null, engine: engine?.label ?? null },
     checkout: {
       mode: checkout.direct.enabled ? checkout.mode : 'whmcs',
-      direct: { enabled: checkout.direct.enabled, provider: checkout.direct.provider, tlds: checkout.direct.tlds },
+      direct: {
+        enabled: checkout.direct.enabled,
+        provider: checkout.direct.provider,
+        tlds: checkout.direct.tlds.filter((t) => !MIN_TERM_OVER_ONE_YEAR.has(t)),
+      },
     },
   };
 }

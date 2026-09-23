@@ -282,11 +282,10 @@ main:focus { outline: none; box-shadow: none; }
   font-family: var(--font-mono); font-size: 10px; line-height: 1; letter-spacing: 0.12em;
   padding: 3px 5px; border: 1px solid currentColor; border-radius: 2px; opacity: 0.75;
 }
-.mode-short { display: none; }
 @media (max-width: 420px) {
-  /* Keep both tabs on one line on small phones; the accessible name stays the long label. */
-  .mode-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-  .mode-short { display: inline; }
+  /* Keep both tabs on one line on small phones: "Describe" stays visible and
+     " your business" stays in the accessible name (WCAG 2.5.3 label in name). */
+  .mode-extra { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 }
 
 .search-bar {
@@ -367,6 +366,8 @@ textarea.search-input { resize: none; line-height: 1.5; min-height: 88px; font-s
 .search-foot a:hover { color: var(--hover-accent); }
 .search-notice { margin: 12px 0 0; font-size: 13px; color: var(--status-danger); }
 .search-progress { margin: 14px 0 0; font-family: var(--font-mono); font-size: 12px; color: var(--fg-muted); }
+/* Stays in the accessibility tree while empty, but takes no space. */
+.search-progress:empty { margin: 0; }
 
 .ai-examples { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
 .ai-examples::-webkit-scrollbar { display: none; }

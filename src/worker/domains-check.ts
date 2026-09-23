@@ -80,19 +80,24 @@ export async function handleDomainCheck(
 ): Promise<Response> {
   if (request.method !== 'POST') return fail('Use POST.', 405, { Allow: 'POST' });
 
+  // Limit before reading the body, so a flood costs as little as possible.
+  if (!(await allowRequest(env.SEARCH_LIMITER, clientIp(request)))) return tooMany();
+
   const payload = await readJsonObject(request);
   if (!payload) return fail(BAD_BODY, 400);
 
   const domains = parseDomainList(payload.domains);
   if (domains.length === 0) return fail('No valid domains to check.', 400);
 
-  if (!(await allowRequest(env.SEARCH_LIMITER, clientIp(request)))) return tooMany();
-
   const providers = buildProviders(env, deps.fetch);
   if (providers.length === 0) return fail('Availability check is not configured.', 503);
 
   const settings = checkoutSettings(env);
   const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
+  // Aborts when the visitor types on and the browser drops this request
+  // (needs the enable_request_signal compatibility flag), so abandoned
+  // as-you-type searches stop calling WHMCS and the registries.
+  const signal = request.signal;
 
   if (wantsNdjson(request)) {
     return ndjson(async (send) => {
@@ -101,7 +106,7 @@ export async function handleDomainCheck(
         domains,
         providers,
         (r) => send({ type: 'result', result: publicResult(r, env, settings) }),
-        { waitUntil },
+        { waitUntil, signal },
       );
       recordAnalytics(env, ctx, request, results);
       send({ type: 'done' });
@@ -109,7 +114,7 @@ export async function handleDomainCheck(
   }
 
   try {
-    const results = await checkWithCache(domains, providers, () => undefined, { waitUntil });
+    const results = await checkWithCache(domains, providers, () => undefined, { waitUntil, signal });
     recordAnalytics(env, ctx, request, results);
     const body: DomainCheckResponse = { result: 'success', domains: results.map((r) => publicResult(r, env, settings)) };
     return json(body);

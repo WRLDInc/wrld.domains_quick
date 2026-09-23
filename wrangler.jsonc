@@ -16,6 +16,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "wrld-domains-quick",
   "compatibility_date": "2026-09-01",
+  // request.signal aborts when the browser drops a request (e.g. an as-you-type
+  // search superseded by the next keystroke), so the Worker stops calling
+  // WHMCS, the registries and the AI model for nobody.
+  "compatibility_flags": ["enable_request_signal"],
 
   // The Worker script only answers /api/*; everything else is an asset.
   "main": "src/worker/index.ts",
@@ -41,7 +45,10 @@
   //   secrets  WHMCS_API_IDENTIFIER, WHMCS_API_SECRET, WHMCS_API_ACCESS_KEY,
   //            CF_REGISTRAR_API_TOKEN, ANTHROPIC_API_KEY,
   //            STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ORDER_WEBHOOK_URL
-  //   vars     below; set them in the dashboard to override per environment.
+  //            (dashboard or `wrangler secret put`; deploys keep them)
+  //   vars     below, and ONLY here: every Workers Builds deploy replaces the
+  //            Worker's plain vars with this block, so a var changed in the
+  //            dashboard silently reverts on the next push. Change them by PR.
   "vars": {
     "WHMCS_URL": "https://wrld.host",
     "SITE_URL": "https://wrld.domains",

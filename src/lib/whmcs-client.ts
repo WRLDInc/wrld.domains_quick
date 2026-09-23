@@ -1,6 +1,8 @@
 import type { WHMCSConfig, DomainWhoisResponse, WHMCSAuthResponse, WHMCSTicketsResponse } from '@/types/whmcs';
 import type { DomainCheckResult } from '@/types/domains';
 
+const WHMCS_TIMEOUT_MS = 8_000;
+
 /**
  * Server-side WHMCS API client. Only ever instantiated inside the Worker;
  * the identifier, secret and access key must not reach the browser.
@@ -12,8 +14,10 @@ export class WHMCSClient {
     this.config = config;
   }
 
-  private async makeRequest<T>(action: string, params: Record<string, string> = {}): Promise<T> {
+  private async makeRequest<T>(action: string, params: Record<string, string> = {}, signal?: AbortSignal): Promise<T> {
     const url = new URL('/includes/api.php', this.config.url);
+    // DomainWhois runs a live WHOIS on the WHMCS server; don't let a slow one hold the request open.
+    const timeout = AbortSignal.timeout(WHMCS_TIMEOUT_MS);
 
     const body = new URLSearchParams({
       action,
@@ -30,6 +34,7 @@ export class WHMCSClient {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: body.toString(),
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
 
     if (!response.ok) {
@@ -40,16 +45,16 @@ export class WHMCSClient {
   }
 
   /** WHMCS `DomainWhois` checks a single domain per call. */
-  async checkDomain(domain: string): Promise<DomainWhoisResponse> {
-    return this.makeRequest<DomainWhoisResponse>('DomainWhois', { domain });
+  async checkDomain(domain: string, signal?: AbortSignal): Promise<DomainWhoisResponse> {
+    return this.makeRequest<DomainWhoisResponse>('DomainWhois', { domain }, signal);
   }
 
   /** Check several domains in parallel. A failed lookup becomes status "error" rather than rejecting the batch. */
-  async checkDomains(domains: string[]): Promise<DomainCheckResult[]> {
+  async checkDomains(domains: string[], signal?: AbortSignal): Promise<DomainCheckResult[]> {
     return Promise.all(
       domains.map(async (domain): Promise<DomainCheckResult> => {
         try {
-          const res = await this.checkDomain(domain);
+          const res = await this.checkDomain(domain, signal);
           if (res.result !== 'success') {
             return { domain, status: 'error', message: res.message };
           }

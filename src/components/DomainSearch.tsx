@@ -63,11 +63,15 @@ export function DomainSearch() {
   const [mode, setMode] = useState<Mode>('name');
   const [busy, setBusy] = useState(false);
   const [checkoutRow, setCheckoutRow] = useState<Row | null>(null);
+  // Bumped only when the AI tab is clicked or tapped, so its textarea takes
+  // focus then, but arrow-key tab switching leaves focus on the tab.
+  const [aiFocus, setAiFocus] = useState(0);
   const tabs = useRef<Record<Mode, HTMLButtonElement | null>>({ name: null, ai: null });
   const aiEnabled = config.suggest.enabled;
 
   function onTabKey(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
     const next: Mode = mode === 'name' ? 'ai' : 'name';
     setMode(next);
     tabs.current[next]?.focus();
@@ -104,12 +108,16 @@ export function DomainSearch() {
             aria-selected={mode === 'ai'}
             aria-controls={`${id}-panel-ai`}
             tabIndex={mode === 'ai' ? 0 : -1}
-            onClick={() => setMode('ai')}
+            onClick={() => {
+              setMode('ai');
+              setAiFocus((n) => n + 1);
+            }}
             onKeyDown={onTabKey}
           >
-            <span className="mode-long">Describe your business</span>
-            <span className="mode-short" aria-hidden="true">
-              Describe it
+            {/* Small phones show "Describe"; the accessible name stays "Describe your business AI",
+                which still starts with the visible text (WCAG 2.5.3). */}
+            <span>
+              Describe<span className="mode-extra"> your business</span>
             </span>{' '}
             <span className="mode-badge">AI</span>
           </button>
@@ -126,7 +134,7 @@ export function DomainSearch() {
       </div>
       {aiEnabled ? (
         <div id={`${id}-panel-ai`} role="tabpanel" aria-labelledby={`${id}-tab-ai`} hidden={mode !== 'ai'}>
-          <AiSearch id={id} config={config} active={mode === 'ai'} onBusy={setBusy} onRegister={setCheckoutRow} />
+          <AiSearch id={id} config={config} active={mode === 'ai'} focusToken={aiFocus} onBusy={setBusy} onRegister={setCheckoutRow} />
         </div>
       ) : null}
 
@@ -143,12 +151,31 @@ interface PanelProps {
   onRegister: (row: Row) => void;
 }
 
+/**
+ * ?q= and ?cancelled= prefill the search. Both are accepted only when they
+ * parse as a domain name, so a crafted link can't put arbitrary text in the
+ * alert on a WRLD page.
+ */
 function initialQuery(): { query: string; notice: string | null } {
   if (typeof window === 'undefined') return { query: '', notice: null };
   const params = new URLSearchParams(window.location.search);
-  const cancelled = params.get('cancelled');
-  if (cancelled) return { query: cancelled, notice: `Checkout cancelled. ${cancelled} is still here when you’re ready.` };
-  return { query: params.get('q') ?? '', notice: null };
+  const clean = (value: string | null) => {
+    const normalized = normalizeQuery((value ?? '').slice(0, 253));
+    return parseDomain(normalized) ? normalized : '';
+  };
+  const cancelled = clean(params.get('cancelled'));
+  if (cancelled && parseDomain(cancelled)?.tld) {
+    return { query: cancelled, notice: `Checkout cancelled. ${cancelled} is still here when you’re ready.` };
+  }
+  return { query: clean(params.get('q')), notice: null };
+}
+
+/** One sentence for the persistent status region once a check settles. */
+function summarize(rows: Row[]): string {
+  const open = rows.filter((r) => r.status === 'available' || r.status === 'likely' || r.status === 'premium').length;
+  const unchecked = rows.filter((r) => r.status === 'unknown').length;
+  const tail = unchecked ? ` ${unchecked} couldn’t be checked here.` : '';
+  return `${open} of ${rows.length} names look open.${tail}`;
 }
 
 function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProps & { ready: boolean }) {
@@ -160,6 +187,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(initial.notice);
   const controllerRef = useRef<AbortController | null>(null);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const queryRef = useRef(query);
   queryRef.current = query;
 
@@ -170,6 +198,15 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
   useEffect(() => {
     if (active) onBusy(busy);
   }, [active, busy, onBusy]);
+
+  // Leaving the page cancels whatever is in flight.
+  useEffect(
+    () => () => {
+      clearTimeout(typingTimer.current);
+      controllerRef.current?.abort();
+    },
+    [],
+  );
 
   /** Hand the query to WHMCS's own checker (the same path the no-JS form takes). */
   const fallbackToWhmcs = useCallback(() => {
@@ -190,7 +227,9 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
       controllerRef.current = controller;
       const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
 
-      setNotice(null);
+      // Typing already clears notices in onChange; an automatic check (e.g. the
+      // ?cancelled= prefill) must not wipe the notice that explains it.
+      if (kind === 'submit') setNotice(null);
       setBusy(true);
       setRows((prev) =>
         candidates.map((domain) => prev?.find((r) => r.domain === domain && r.status !== 'checking') ?? { domain, status: 'checking' }),
@@ -232,8 +271,8 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
       return;
     }
     if (parsed.label.length < 2) return;
-    const timer = setTimeout(() => runCheck('typing'), TYPING_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    typingTimer.current = setTimeout(() => runCheck('typing'), TYPING_DEBOUNCE_MS);
+    return () => clearTimeout(typingTimer.current);
   }, [normalized, ready, live, runCheck]);
 
   // "/" focuses the search from anywhere on the page.
@@ -252,6 +291,9 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // A pending as-you-type check would otherwise fire after this submit and
+    // abort it, taking the WHMCS fallback with it.
+    clearTimeout(typingTimer.current);
     if (!normalized) {
       setNotice('Type a name first, like yourbusiness.com.');
       inputRef.current?.focus();
@@ -344,6 +386,11 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
         </div>
       </form>
 
+      {/* Always rendered so screen readers pick up the first summary too. */}
+      <p className="sr-only" role="status">
+        {rows && !busy ? summarize(rows) : ''}
+      </p>
+
       {rows ? (
         <SearchResults
           rows={rows}
@@ -356,7 +403,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
   );
 }
 
-function AiSearch({ id, config, active, onBusy, onRegister }: PanelProps) {
+function AiSearch({ id, config, active, focusToken, onBusy, onRegister }: PanelProps & { focusToken: number }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const [description, setDescription] = useState('');
@@ -371,9 +418,13 @@ function AiSearch({ id, config, active, onBusy, onRegister }: PanelProps) {
     if (active) onBusy(busy);
   }, [active, busy, onBusy]);
 
+  // Focus the description only when the tab was clicked or tapped (focusToken
+  // changes), never on arrow-key tab switching, which must keep focus on the tab.
   useEffect(() => {
-    if (active) inputRef.current?.focus({ preventScroll: true });
-  }, [active]);
+    if (focusToken) inputRef.current?.focus({ preventScroll: true });
+  }, [focusToken]);
+
+  useEffect(() => () => controllerRef.current?.abort(), []);
 
   async function run(text: string) {
     const clean = text.trim();
@@ -417,6 +468,8 @@ function AiSearch({ id, config, active, onBusy, onRegister }: PanelProps) {
       setPhase('done');
     } catch {
       if (controllerRef.current !== controller) return;
+      // Anything still spinning won't get an answer now.
+      setRows(settle);
       setNotice('We couldn’t reach the name generator just now. Try again, or search a name directly.');
       setPhase('idle');
     } finally {
@@ -499,11 +552,10 @@ function AiSearch({ id, config, active, onBusy, onRegister }: PanelProps) {
         </div>
       </form>
 
-      {progress ? (
-        <p className="search-progress" aria-live="polite">
-          {progress}
-        </p>
-      ) : null}
+      {/* Persistent status region: present before the first update, so it's announced. */}
+      <p className="search-progress" role="status">
+        {progress ?? ''}
+      </p>
 
       {visible.length ? <SearchResults rows={visible} config={config} onRegister={onRegister} /> : null}
 

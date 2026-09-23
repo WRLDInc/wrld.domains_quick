@@ -56,17 +56,45 @@ export function ndjson(
   });
 }
 
-/** Parse a JSON object body (≤ 16 KB). Null for anything else, so routes can 400 cleanly. */
-export async function readJsonObject(request: Request, maxBytes = 16_384): Promise<Record<string, unknown> | null> {
+/**
+ * Read the body as text, giving up as soon as it passes `maxBytes` rather
+ * than buffering everything first (a missing Content-Length can't bypass the
+ * cap). Null when the body is too large or unreadable.
+ */
+export async function readLimitedText(request: Request, maxBytes: number): Promise<string | null> {
   const declared = Number(request.headers.get('Content-Length') ?? '0');
   if (declared > maxBytes) return null;
-  let text: string;
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
   try {
-    text = await request.text();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
   } catch {
     return null;
   }
-  if (text.length > maxBytes) return null;
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+/** Parse a JSON object body (≤ 16 KB). Null for anything else, so routes can 400 cleanly. */
+export async function readJsonObject(request: Request, maxBytes = 16_384): Promise<Record<string, unknown> | null> {
+  const text = await readLimitedText(request, maxBytes);
+  if (text === null) return null;
   try {
     const value: unknown = JSON.parse(text);
     return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;

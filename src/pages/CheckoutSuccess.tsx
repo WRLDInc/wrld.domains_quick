@@ -16,11 +16,11 @@ const MAX_POLLS = 40;
 
 const COPY: Record<State, { title: (d: string) => string; body: string }> = {
   paid: { title: (d) => `Registering ${d}…`, body: 'Payment received. We’re registering the name now; this usually takes under a minute.' },
-  registering: { title: (d) => `Registering ${d}…`, body: 'The registry is processing the registration. You can close this page; we’ll email you when it’s live.' },
-  registered: { title: (d) => `${d} is yours.`, body: 'Registration is complete. We’ve emailed your receipt and the next steps for DNS.' },
+  registering: { title: (d) => `Registering ${d}…`, body: 'The registry is still processing it. This page updates on its own while it finishes.' },
+  registered: { title: (d) => `${d} is yours.`, body: 'Registration is complete. When you’re ready to point it at a site or email, open a ticket and we’ll set up DNS with you.' },
   action_required: { title: () => 'One more step: check your inbox.', body: 'The registry needs you to confirm the registrant email address. The link expires in 15 days.' },
   dry_run: { title: (d) => `Test order recorded for ${d}.`, body: 'This checkout ran in test mode. The payment was recorded and nothing was registered.' },
-  needs_review: { title: (d) => `We’re finishing ${d} by hand.`, body: 'Something needs a person to look at it before we register. Our team has been notified and will reach out today; if we can’t complete it, you get a full refund.' },
+  needs_review: { title: (d) => `We’re finishing ${d} by hand.`, body: 'Something needs a person to look at it before we register. Our team has been notified and will reach out shortly; if we can’t complete it, you get a full refund.' },
   failed: { title: (d) => `We couldn’t register ${d}.`, body: 'The registry turned the request down. Our team has been notified and will reach out with options, including a full refund.' },
   unknown: { title: () => 'We couldn’t find that order.', body: 'If you completed a payment, open a ticket and we’ll sort it out.' },
 };
