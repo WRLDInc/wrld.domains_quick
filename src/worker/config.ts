@@ -140,6 +140,7 @@ export function publicConfig(env: CloudflareEnv): PublicConfig {
   return {
     availability: { live: providers.length > 0, providers },
     suggest: { enabled: engine !== null, engine: engine?.label ?? null },
+    wishlist: { botId: env.GLEAP_WISHLIST_BOT_ID?.trim() || null },
     checkout: {
       mode: checkout.direct.enabled ? checkout.mode : 'whmcs',
       direct: {

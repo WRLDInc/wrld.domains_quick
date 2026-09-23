@@ -62,6 +62,7 @@ export type FulfillmentProvider = 'cloudflare' | 'rtr' | 'whmcs';
 export interface PublicConfig {
   availability: { live: boolean; providers: ProviderId[] };
   suggest: { enabled: boolean; engine: string | null };
+  wishlist: { botId: string | null };
   checkout: {
     mode: CheckoutMode;
     /** Direct (Stripe) checkout is configured and allowed for these TLDs. Empty means all. */

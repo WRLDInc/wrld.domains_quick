@@ -10,6 +10,7 @@ import type { PublicConfig, StreamEvent } from '@/types/domains';
 export const FALLBACK_CONFIG: PublicConfig = {
   availability: { live: false, providers: [] },
   suggest: { enabled: false, engine: null },
+  wishlist: { botId: null },
   checkout: { mode: 'whmcs', direct: { enabled: false, provider: null, tlds: [] } },
 };
 

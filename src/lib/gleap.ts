@@ -7,6 +7,7 @@
 
 type GleapLike = {
   open?: () => void;
+  startBot?: (botId: string, showBackButton?: boolean) => void;
   openHelpCenter?: (showBackButton?: boolean) => void;
   openConversations?: () => void;
   identify?: (userId: string, data?: object) => void;
@@ -48,6 +49,20 @@ export function trackEvent(eventName: string, eventData?: Record<string, unknown
 /** Open the chat. */
 export function openGleap(): void {
   gleap()?.open?.();
+}
+
+/**
+ * Pass a visitor's selected names into WRLD Help and launch the dedicated
+ * wishlist bot when it has been configured. Until then, the normal help flow
+ * opens with the same custom data attached.
+ */
+export function openDomainWishlist(domains: string[], botId: string | null): void {
+  const sdk = gleap();
+  const value = domains.join(', ');
+  sdk?.setCustomData?.('domain_wishlist', value);
+  sdk?.trackEvent?.('domain_wishlist_opened', { domains, count: domains.length });
+  if (botId) sdk?.startBot?.(botId, true);
+  else sdk?.open?.();
 }
 
 export function openHelpCenter(): void {

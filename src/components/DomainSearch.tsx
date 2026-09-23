@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CircleHelp, ListPlus, Sparkles } from 'lucide-react';
 import type { DomainCheckResult, PublicConfig } from '@/types/domains';
 import { Button } from './Button';
 import { RollText } from './RollText';
@@ -7,7 +7,7 @@ import { SearchResults, type Row } from './SearchResults';
 import { CheckoutSheet } from './CheckoutSheet';
 import { pillFor, type PillStatus } from './StatusPill';
 import { LINKS } from '@/lib/links';
-import { POPULAR_TLDS, buildCandidates, normalizeQuery, parseDomain, withTld } from '@/lib/domains';
+import { NEW_TLDS, POPULAR_TLDS, buildCandidates, normalizeQuery, parseDomain, withTld } from '@/lib/domains';
 import { streamNdjson } from '@/lib/api';
 import { useConfig } from '@/lib/useConfig';
 import { useLook } from '@/lib/look';
@@ -27,6 +27,12 @@ const EXAMPLES = [
 ];
 
 const ORDER: Record<PillStatus, number> = { available: 0, likely: 1, premium: 2, checking: 3, unknown: 4, taken: 5 };
+const ALL_TLDS = [...POPULAR_TLDS, ...NEW_TLDS];
+
+function sortRows(rows: Row[] | null): Row[] | null {
+  const settled = settle(rows);
+  return settled ? [...settled].sort((a, b) => ORDER[a.status] - ORDER[b.status]) : settled;
+}
 
 function toRow(result: DomainCheckResult, prev?: Row): Row {
   return { domain: result.domain, status: pillFor(result), price: result.price, reason: prev?.reason };
@@ -45,6 +51,17 @@ function engineName(label: string | null): string {
   if (label.startsWith('claude')) return 'Claude';
   if (label.startsWith('workers-ai')) return 'Workers AI';
   return 'WRLD wordplay';
+}
+
+function InfoTip({ children }: { children: string }) {
+  return (
+    <span className="info-tip" tabIndex={0} aria-label={children}>
+      <CircleHelp size={15} strokeWidth={1.5} aria-hidden="true" />
+      <span className="info-tip-content" role="tooltip">
+        {children}
+      </span>
+    </span>
+  );
 }
 
 /**
@@ -68,6 +85,11 @@ export function DomainSearch() {
   const [aiFocus, setAiFocus] = useState(0);
   const tabs = useRef<Record<Mode, HTMLButtonElement | null>>({ name: null, ai: null });
   const aiEnabled = config.suggest.enabled;
+
+  function openAi() {
+    setMode('ai');
+    setAiFocus((n) => n + 1);
+  }
 
   function onTabKey(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -108,18 +130,16 @@ export function DomainSearch() {
             aria-selected={mode === 'ai'}
             aria-controls={`${id}-panel-ai`}
             tabIndex={mode === 'ai' ? 0 : -1}
-            onClick={() => {
-              setMode('ai');
-              setAiFocus((n) => n + 1);
-            }}
+            onClick={openAi}
             onKeyDown={onTabKey}
           >
             {/* Small phones show "Describe"; the accessible name stays "Describe your business AI",
                 which still starts with the visible text (WCAG 2.5.3). */}
             <span>
               Describe<span className="mode-extra"> your business</span>
-            </span>{' '}
-            <span className="mode-badge">AI</span>
+            </span>
+            <span className="mode-badge" aria-hidden="true">New</span>
+            <span className="sr-only"> AI</span>
           </button>
         </div>
       ) : null}
@@ -130,7 +150,16 @@ export function DomainSearch() {
         aria-labelledby={aiEnabled ? `${id}-tab-name` : undefined}
         hidden={mode !== 'name'}
       >
-        <NameSearch id={id} config={config} ready={ready} active={mode === 'name'} onBusy={setBusy} onRegister={setCheckoutRow} />
+        <NameSearch
+          id={id}
+          config={config}
+          ready={ready}
+          active={mode === 'name'}
+          aiEnabled={aiEnabled}
+          onBusy={setBusy}
+          onRegister={setCheckoutRow}
+          onExpandAi={openAi}
+        />
       </div>
       {aiEnabled ? (
         <div id={`${id}-panel-ai`} role="tabpanel" aria-labelledby={`${id}-tab-ai`} hidden={mode !== 'ai'}>
@@ -178,7 +207,16 @@ function summarize(rows: Row[]): string {
   return `${open} of ${rows.length} names look open.${tail}`;
 }
 
-function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProps & { ready: boolean }) {
+function NameSearch({
+  id,
+  config,
+  ready,
+  active,
+  aiEnabled,
+  onBusy,
+  onRegister,
+  onExpandAi,
+}: PanelProps & { ready: boolean; aiEnabled: boolean; onExpandAi: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [initial] = useState(initialQuery);
@@ -186,6 +224,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(initial.notice);
+  const [expanded, setExpanded] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const queryRef = useRef(query);
@@ -215,13 +254,13 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
   }, []);
 
   const runCheck = useCallback(
-    async (kind: 'typing' | 'submit') => {
+    async (kind: 'typing' | 'submit' | 'expand', includeNewTlds = false) => {
       const parsed = parseDomain(normalizeQuery(queryRef.current));
       if (!parsed) {
         if (kind === 'submit') setNotice('That doesn’t look like a domain yet. Try something like yourbusiness.com.');
         return;
       }
-      const candidates = buildCandidates(parsed);
+      const candidates = buildCandidates(parsed, includeNewTlds ? 20 : 8, includeNewTlds ? ALL_TLDS : POPULAR_TLDS);
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
@@ -235,6 +274,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
         candidates.map((domain) => prev?.find((r) => r.domain === domain && r.status !== 'checking') ?? { domain, status: 'checking' }),
       );
       if (kind === 'submit') trackEvent('domain_search', { label: parsed.label, tld: parsed.tld });
+      if (kind === 'expand') trackEvent('domain_search_expanded', { label: parsed.label, kind: 'new_tlds' });
 
       try {
         await streamNdjson(
@@ -246,7 +286,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
           },
           controller.signal,
         );
-        setRows(settle);
+        setRows(sortRows);
       } catch {
         if (controllerRef.current !== controller) return; // superseded by a newer keystroke
         if (kind === 'submit') fallbackToWhmcs();
@@ -329,7 +369,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
         <label htmlFor={`${id}-query`} className="sr-only">
           Domain name
         </label>
-        <div className="search-bar">
+        <div className="search-bar search-bar-animated">
           <input
             ref={inputRef}
             id={`${id}-query`}
@@ -339,6 +379,7 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              setExpanded(false);
               if (notice) setNotice(null);
             }}
             placeholder="yourbusiness.com"
@@ -352,7 +393,12 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
           <span className="kbd" aria-hidden="true">
             /
           </span>
-          <Button type="submit" variant="warm" className="btn-xl search-go" aria-label={busy ? 'Checking' : 'Search domains'}>
+          <Button
+            type="submit"
+            variant="warm"
+            className={`btn-xl search-go${normalized.length >= 5 ? ' search-go-ready' : ''}`}
+            aria-label={busy ? 'Checking' : 'Search domains'}
+          >
             <RollText>{busy ? 'Checking…' : 'Search'}</RollText>
             <ArrowRight size={18} strokeWidth={1.5} aria-hidden="true" />
           </Button>
@@ -392,12 +438,45 @@ function NameSearch({ id, config, ready, active, onBusy, onRegister }: PanelProp
       </p>
 
       {rows ? (
-        <SearchResults
-          rows={rows}
-          config={config}
-          onRegister={onRegister}
-          note="Checked live with the registry. “Looks available” is confirmed by WRLD.host at checkout."
-        />
+        <>
+          <SearchResults
+            rows={rows}
+            config={config}
+            onRegister={onRegister}
+            note="Available names are shown first. “Looks available” is confirmed by WRLD.host at checkout."
+          />
+          <div className="search-expansions">
+            {!expanded ? (
+              <span className="expansion-action">
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => {
+                    setExpanded(true);
+                    void runCheck('expand', true);
+                  }}
+                >
+                  <ListPlus size={16} strokeWidth={1.5} aria-hidden="true" />
+                  Load more TLDs
+                </Button>
+                <InfoTip>
+                  New TLDs are newer, descriptive domain endings such as .design, .agency, and .store.
+                </InfoTip>
+              </span>
+            ) : null}
+            {aiEnabled ? (
+              <span className="expansion-action">
+                <Button type="button" variant="secondary" onClick={onExpandAi}>
+                  <Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />
+                  Expand search with AI
+                </Button>
+                <InfoTip>
+                  AI uses your business description to suggest relevant names, then checks each recommendation live.
+                </InfoTip>
+              </span>
+            ) : null}
+          </div>
+        </>
       ) : null}
     </>
   );
