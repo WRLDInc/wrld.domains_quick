@@ -149,8 +149,8 @@ The build ran against a Pages-style config. `wrangler.jsonc` must be at the repo
 **Results say "Looks available" but WHMCS says taken or reserved**
 That answer came from RDAP, which can't see reserved, blocked or premium names. Configure the Cloudflare Registrar token so registrar-confirmed answers come first.
 
-**WHMCS provider always errors**
-WHMCS is rejecting the Worker's IP. Set `$api_access_key` in `configuration.php` and the matching `WHMCS_API_ACCESS_KEY` secret.
+**WHMCS provider always errors** (results keep showing `"source":"rdap"`)
+The Worker logs `[availability] whmcs could not answer N of M: <reason>` with WHMCS's own message. `Invalid IP …` means `$api_access_key` is missing from `configuration.php` or doesn't match the `WHMCS_API_ACCESS_KEY` secret; an authentication error means the identifier or secret is wrong; a permissions error names the API action the credential's role doesn't allow (it needs `DomainWhois`, and the admin's role group needs **API Access**).
 
 **"Describe your business" tab is missing**
 No AI engine is configured: the `ai` binding is absent and there's no `ANTHROPIC_API_KEY`. Locally, set `SUGGEST_ENGINE=wordplay`.

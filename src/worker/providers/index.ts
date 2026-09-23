@@ -48,6 +48,14 @@ export async function runChain(
       }),
     );
 
+    // A provider that can't answer is otherwise invisible: the next one covers
+    // for it. Log why, once per pass, so a misconfigured credential (e.g. the
+    // WHMCS "Invalid IP" rejection) shows up in the Worker's logs.
+    if (errored.length) {
+      const reasons = [...new Set(errored.map((d) => final.get(d)?.message ?? 'No answer'))].slice(0, 3);
+      console.warn(`[availability] ${provider.id} could not answer ${errored.length} of ${pending.length}: ${reasons.join(' | ')}`);
+    }
+
     pending = errored;
   }
 
