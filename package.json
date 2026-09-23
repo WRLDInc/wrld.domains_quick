@@ -10,7 +10,7 @@
     "deploy": "wrangler deploy",
     "cf:dev": "wrangler dev",
     "type-check": "tsc --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
