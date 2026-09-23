@@ -1,14 +1,9 @@
-import type {
-  WHMCSConfig,
-  DomainWhoisResponse,
-  DomainCheckResult,
-  WHMCSAuthResponse,
-  WHMCSTicketsResponse,
-} from '@/types/whmcs';
+import type { WHMCSConfig, DomainWhoisResponse, WHMCSAuthResponse, WHMCSTicketsResponse } from '@/types/whmcs';
+import type { DomainCheckResult } from '@/types/domains';
 
 /**
- * Server-side WHMCS API client. Only ever instantiated inside Pages Functions;
- * the identifier and secret must not reach the browser.
+ * Server-side WHMCS API client. Only ever instantiated inside the Worker;
+ * the identifier, secret and access key must not reach the browser.
  */
 export class WHMCSClient {
   private config: WHMCSConfig;
@@ -25,6 +20,7 @@ export class WHMCSClient {
       identifier: this.config.apiIdentifier,
       secret: this.config.apiSecret,
       responsetype: 'json',
+      ...(this.config.accessKey ? { accesskey: this.config.accessKey } : {}),
       ...params,
     });
 
@@ -58,7 +54,7 @@ export class WHMCSClient {
             return { domain, status: 'error', message: res.message };
           }
           if (res.status === 'available' || res.status === 'unavailable') {
-            return { domain, status: res.status };
+            return { domain, status: res.status, source: 'whmcs' };
           }
           return { domain, status: 'error', message: 'Unexpected response' };
         } catch (error) {
