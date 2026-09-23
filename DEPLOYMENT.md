@@ -74,7 +74,7 @@ Known limits of the Cloudflare Registrar API (beta, 2026-04): no renewals, trans
 
 ### Abuse controls and analytics
 
-`SEARCH_LIMITER` (120/min per IP) and `SUGGEST_LIMITER` (8/min) are Workers Rate Limiting bindings declared in `wrangler.jsonc`. `DOMAIN_ANALYTICS` (optional KV) records each lookup for 90 days.
+`SEARCH_LIMITER` (120/min per IP) and `SUGGEST_LIMITER` (8/min per IP, shared by AI suggestions and checkout attempts under separate keys) are Workers Rate Limiting bindings declared in `wrangler.jsonc`. `DOMAIN_ANALYTICS` (optional KV) records each lookup for 90 days.
 
 Secrets can also be set from a logged-in terminal:
 

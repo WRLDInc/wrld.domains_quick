@@ -5,7 +5,7 @@ import { cloudflareProvider, registrarBase, type CloudflareConfig } from './prov
 import type { ProviderResult } from './providers/types.ts';
 import { retailPrice } from './pricing.ts';
 import { ensureTldProduct, stripeClient, verifyWebhook, type StripeClient } from './stripe.ts';
-import { json, readJsonObject } from './http.ts';
+import { allowRequest, clientIp, json, readJsonObject, tooMany } from './http.ts';
 
 /**
  * Direct checkout: Stripe collects payment and the registrant's details, then
@@ -81,6 +81,9 @@ export async function handleCreateCheckout(
   if (!settings.direct.enabled || settings.mode === 'whmcs') {
     return json({ result: 'error', message: 'Direct checkout is not available. Register on WRLD.host instead.' }, 503);
   }
+
+  // Every attempt costs a registrar quote against Cloudflare's shared API budget.
+  if (!(await allowRequest(env.SUGGEST_LIMITER, `checkout:${clientIp(request)}`))) return tooMany();
 
   const body = await readJsonObject(request);
   const domain = typeof body?.domain === 'string' ? body.domain.trim().toLowerCase() : '';
