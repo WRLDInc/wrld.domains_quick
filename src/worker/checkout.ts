@@ -371,7 +371,11 @@ export async function fulfil(
     result?: { state?: string; completed?: boolean };
   } | null;
   if (!res.ok || !payload?.success) {
-    return { ...order, state: 'failed', note: payload?.errors?.[0]?.message ?? `Cloudflare HTTP ${res.status}`, registrar: payload };
+    const note = payload?.errors?.[0]?.message ?? `Cloudflare HTTP ${res.status}`;
+    // 429/5xx are transient (shared Registrar API budget with search). Ask Stripe
+    // to retry; one-registration-per-domain makes a later attempt safe.
+    if (res.status === 429 || res.status >= 500) throw new RetryableError(note);
+    return { ...order, state: 'failed', note, registrar: payload };
   }
   return { ...order, state: mapRegistrarState(payload.result?.state), registrar: payload.result };
 }

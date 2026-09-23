@@ -99,8 +99,8 @@ export function CheckoutSheet({ row, config, onClose }: CheckoutSheetProps) {
             </p>
           ) : null}
           <p className="sheet-note">
-            Card payments run on Stripe. We register the name in your name as soon as payment clears and email you when
-            it’s live. WRLD.host keeps domains, hosting and DNS in one client area.
+            Card payments run on Stripe. We register the name in your name as soon as payment clears. WRLD.host keeps
+            domains, hosting and DNS in one client area.
           </p>
         </div>
       ) : null}
