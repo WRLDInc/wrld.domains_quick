@@ -3,7 +3,7 @@
 ## Development Environment Setup
 
 ### Prerequisites
-- Node.js 18+ and npm
+- Node.js 22.12+ and npm (Vite 8 needs 20.19+ or 22.12+; the test runner needs 22.6+ to strip TypeScript; CI uses 24)
 - Git
 - Code editor (VS Code recommended)
 - Cloudflare account (for testing Workers locally)
