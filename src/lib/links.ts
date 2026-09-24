@@ -30,11 +30,26 @@ export const LINKS = {
   email: 'mailto:ridge@wrld.tech',
 } as const;
 
-/** WHMCS cart entry for one specific domain. */
-export function cartUrl(kind: 'register' | 'transfer', domain: string): string {
+/**
+ * WHMCS cart entry for one specific domain.
+ *
+ * Register uses `domains[]` + `domainsregperiod[...]`, which WHMCS accepts as
+ * a plain GET and turns into a cart line straight away, landing on
+ * cart.php?a=confdomains (verified against wrld.host on 2026-09-23). The older
+ * `query=` form only pre-fills WHMCS's own search and costs the customer an
+ * extra "Add to Cart" click, so it's kept for transfers and for `lookup`
+ * cases where WHMCS should check or price the name itself (premium names, or
+ * names we couldn't check).
+ */
+export function cartUrl(kind: 'register' | 'transfer', domain: string, { lookup = false, years = 1 } = {}): string {
   const url = new URL('https://wrld.host/cart.php');
   url.searchParams.set('a', 'add');
   url.searchParams.set('domain', kind);
-  url.searchParams.set('query', domain);
+  if (kind === 'register' && !lookup) {
+    url.searchParams.append('domains[]', domain);
+    url.searchParams.set(`domainsregperiod[${domain}]`, String(years));
+  } else {
+    url.searchParams.set('query', domain);
+  }
   return url.toString();
 }

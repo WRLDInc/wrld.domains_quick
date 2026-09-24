@@ -2,6 +2,12 @@ export interface WHMCSConfig {
   url: string;
   apiIdentifier: string;
   apiSecret: string;
+  /**
+   * `$api_access_key` from WHMCS configuration.php. Sent as `accesskey` so API
+   * calls from the Worker's rotating Cloudflare egress IPs get past the WHMCS
+   * API IP allowlist, which otherwise rejects them.
+   */
+  accessKey?: string;
 }
 
 /** Raw response of the WHMCS `DomainWhois` API, which checks one domain per call. */
@@ -9,21 +15,6 @@ export interface DomainWhoisResponse {
   result: 'success' | 'error';
   status?: 'available' | 'unavailable';
   whois?: string;
-  message?: string;
-}
-
-export type DomainAvailability = 'available' | 'unavailable' | 'error';
-
-export interface DomainCheckResult {
-  domain: string;
-  status: DomainAvailability;
-  message?: string;
-}
-
-/** Shape returned by /api/domains/check. */
-export interface DomainCheckResponse {
-  result: 'success' | 'error';
-  domains: DomainCheckResult[];
   message?: string;
 }
 

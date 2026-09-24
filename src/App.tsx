@@ -7,6 +7,8 @@ import { HomePage } from '@/pages/Home';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
 import { SupportPage } from '@/pages/Support';
+import { CheckoutSuccessPage } from '@/pages/CheckoutSuccess';
+import { LookSwitcher } from '@/components/LookSwitcher';
 import { usePageTitle } from '@/lib/usePageTitle';
 
 function ScrollToTop() {
@@ -31,12 +33,14 @@ export function App() {
           <Route path="/login" component={LoginPage} />
           <Route path="/register" component={RegisterPage} />
           <Route path="/support" component={SupportPage} />
+          <Route path="/checkout/success" component={CheckoutSuccessPage} />
           <Route>
             <NotFound />
           </Route>
         </Switch>
       </main>
       <Footer />
+      <LookSwitcher />
     </>
   );
 }

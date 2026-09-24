@@ -16,6 +16,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "wrld-domains-quick",
   "compatibility_date": "2026-09-01",
+  // request.signal aborts when the browser drops a request (e.g. an as-you-type
+  // search superseded by the next keystroke), so the Worker stops calling
+  // WHMCS, the registries and the AI model for nobody.
+  "compatibility_flags": ["enable_request_signal"],
 
   // The Worker script only answers /api/*; everything else is an asset.
   "main": "src/worker/index.ts",
@@ -36,15 +40,53 @@
     "run_worker_first": ["/api/*"]
   },
 
-  // Non-secret configuration. Secrets (WHMCS_API_IDENTIFIER, WHMCS_API_SECRET)
-  // live on the Worker in the dashboard, or in .dev.vars locally.
+  // Non-secret configuration. Every integration switches on only when its
+  // credentials exist (see src/worker/config.ts and DEPLOYMENT.md):
+  //   secrets  WHMCS_API_IDENTIFIER, WHMCS_API_SECRET, WHMCS_API_ACCESS_KEY,
+  //            CF_REGISTRAR_API_TOKEN, ANTHROPIC_API_KEY,
+  //            STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ORDER_WEBHOOK_URL
+  //            (dashboard or `wrangler secret put`; deploys keep them)
+  //   vars     below, and ONLY here: every Workers Builds deploy replaces the
+  //            Worker's plain vars with this block, so a var changed in the
+  //            dashboard silently reverts on the next push. Change them by PR.
   "vars": {
-    "WHMCS_URL": "https://wrld.host"
+    "WHMCS_URL": "https://wrld.host",
+    "SITE_URL": "https://wrld.domains",
+    // Account that owns the Cloudflare Registrar integration (WRLD Inc.).
+    // Inert until CF_REGISTRAR_API_TOKEN is set as a secret.
+    "CF_ACCOUNT_ID": "1260edafa2dec8e0bdf243859e07c160",
+    // "true" → registrar-sandbox endpoints (com/net only, no billing). Keep on
+    // until direct checkout has been rehearsed end to end.
+    "CF_REGISTRAR_SANDBOX": "true",
+    // whmcs = every purchase hands off to the WRLD.host cart (today's flow).
+    // direct / both = Stripe quick checkout, once its secrets and ORDERS exist.
+    "CHECKOUT_MODE": "whmcs",
+    // Exactly "true" lets a paid order call the registrar. Anything else is a dry run.
+    "REGISTRAR_LIVE": "false",
+    // Direct-checkout margin over registrar cost. Business decision; see DEPLOYMENT.md.
+    "PRICE_MARKUP_FIXED_CENTS": "300",
+    "PRICE_MARKUP_PERCENT": "0"
   },
+
+  // Workers AI powers "Describe your business" when no ANTHROPIC_API_KEY is set,
+  // and is the fallback when it is.
+  "ai": { "binding": "AI" },
+
+  // Per-IP abuse limits. Generous for people, tight for scripts; the AI route
+  // costs money per call, so it gets far less headroom.
+  "ratelimits": [
+    { "name": "SEARCH_LIMITER", "namespace_id": "40101", "simple": { "limit": 120, "period": 60 } },
+    { "name": "SUGGEST_LIMITER", "namespace_id": "40102", "simple": { "limit": 8, "period": 60 } }
+  ],
 
   // Optional: bind a KV namespace to record each availability lookup for
   // 90 days. The check works without it.
-  // "kv_namespaces": [{ "binding": "DOMAIN_ANALYTICS", "id": "<namespace-id>" }],
+  // "kv_namespaces": [
+  //   { "binding": "DOMAIN_ANALYTICS", "id": "<namespace-id>" },
+  //   // Required for direct checkout (order records + webhook idempotency):
+  //   //   npx wrangler kv namespace create ORDERS
+  //   { "binding": "ORDERS", "id": "<namespace-id>" }
+  // ],
 
   // Custom domain. Adding this moves wrld.domains from the old Pages project
   // to this Worker on the next production deploy, so it is left commented out

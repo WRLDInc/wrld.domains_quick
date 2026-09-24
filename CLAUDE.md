@@ -11,10 +11,10 @@ npm run preview      # Preview production build locally
 npm run type-check   # TypeScript validation without emitting files
 npm run deploy       # wrangler deploy (manual fallback; Workers Builds deploys from GitHub)
 npm run cf:dev       # wrangler dev: serves dist/ + the Worker on port 8787 (build first)
-npm test             # Worker route tests for /api/domains/check (node --test, no WHMCS calls)
+npm test             # Worker + lib tests (node --test, fakes only, never touches the network)
 ```
 
-Local development needs two processes: `npm run build && npm run cf:dev` for the Worker (reads WHMCS secrets from `.dev.vars`) and `npm run dev` for the frontend. With only Vite running, every domain search falls back to the WHMCS cart on wrld.host. No linter is configured.
+Local development needs two processes: `npm run build && npm run cf:dev` for the Worker (reads secrets from `.dev.vars`) and `npm run dev` for the frontend. With only Vite running, every domain search falls back to the WHMCS cart on wrld.host. The Workers AI binding is always remote, so `cf:dev` needs `npx wrangler login`; without it, run wrangler against a local copy of `wrangler.jsonc` without the `ai` block and set `SUGGEST_ENGINE=wordplay`. No linter is configured.
 
 ## Architecture
 
@@ -30,12 +30,19 @@ Every outbound URL lives in `src/lib/links.ts`. Add new destinations there, not 
 
 ### API Layer
 
-`src/worker/` is the Worker script:
-- `index.ts` routes `/api/domains/check` to the handler, other `/api/*` to a JSON 404, and everything else to the `ASSETS` binding.
-- `domains-check.ts` → WHMCS `DomainWhois` (one call per domain, run in parallel, max 10). Used by the inline availability results on the home page. 405 on non-POST, 400 on bad bodies, 503 when the WHMCS secrets are missing (the UI then falls back to WHMCS's own checker).
-- `domains-check.test.ts` covers those paths under `node --test`. Runtime imports in the Worker use explicit `.ts` extensions so Node can load them.
+`src/worker/` is the Worker script. Every integration switches on only when its credentials exist; `config.ts` is the one place that reads env for features, and `GET /api/config` tells the UI what is live (never secrets).
+- `index.ts` routes `/api/domains/check`, `/api/domains/suggest`, `/api/config`, `/api/checkout`, `/api/checkout/status`, `/api/stripe/webhook`; other `/api/*` get a JSON 404, everything else goes to `ASSETS`.
+- `providers/` is the availability chain: `cloudflare.ts` (Registrar `domain-check`, authoritative, 20 per call, carries cost), `whmcs.ts` (DomainWhois, needs `WHMCS_API_ACCESS_KEY` from a Worker), `rdap.ts` (free fallback; 404 = "looks available", never "available"). `index.ts` runs them in order, lets an `error` for one domain fall through to the next provider, streams definite answers as they land, and puts a short edge cache in front. `toPublic` strips the cost basis before anything leaves the Worker.
+- `domains-check.ts` → up to 20 domains; JSON by default, NDJSON (`Accept: application/x-ndjson`) for streaming rows. A price is attached only when it's exactly what direct checkout would charge (`publicResult`).
+- `suggest.ts` + `suggest-engine.ts` → "Describe your business": Claude (`@anthropic-ai/sdk`, `claude-opus-5`, low effort, JSON-schema output, `fallbacks: "default"`) → Workers AI → deterministic wordplay. Names are filtered to `SUGGEST_TLDS` (from the ADAC config in Craft) and checked through the same chain.
+- `checkout.ts` + `stripe.ts` → direct checkout: Stripe Checkout Session with a per-TLD product created on first sale (`wrld_domain_<tld>`), webhook signature check with WebCrypto, fulfilment at Cloudflare Registrar. Re-checks cost and availability before charging and after payment; dry run unless `REGISTRAR_LIVE=true`; Stripe test/live mode must match the registrar (`realRegistrations`); only sessions tagged `metadata.source=wrld.domains` are processed. Orders live in the `ORDERS` KV keyed by session ID, with the claim under a separate key: KV allows one write per second per key, so never write the same key twice in one request (`fakeKv` in the tests enforces this).
+- `wrangler.jsonc` enables `enable_request_signal`, and routes pass `request.signal` down to every upstream call so abandoned as-you-type searches stop. Plain vars live only in `wrangler.jsonc`; deploys overwrite dashboard vars (secrets are kept).
+- `pricing.ts` → retail = cost × (1 + `PRICE_MARKUP_PERCENT`) + `PRICE_MARKUP_FIXED_CENTS` (default +$3.00).
+- Tests sit next to the code (`*.test.ts`) and share fakes in `test-helpers.ts`. Runtime imports in the Worker use explicit `.ts` extensions so Node can load them; type-only imports may use the `@/` alias.
 
-`src/lib/whmcs-client.ts` is the server-side WHMCS client (only imported by the Worker). `src/lib/domains.ts` holds the domain parsing/validation shared by the UI and the check function. `WHMCS_URL` is a var in `wrangler.jsonc`; `WHMCS_API_IDENTIFIER` and `WHMCS_API_SECRET` are Worker secrets in production and live in `.dev.vars` locally. The `DOMAIN_ANALYTICS` KV binding is optional.
+`src/lib/whmcs-client.ts` is the server-side WHMCS client (only imported by the Worker). `src/lib/domains.ts` holds the domain parsing/validation shared by the UI and the Worker. `src/lib/api.ts` is the browser side (config, NDJSON reader, checkout). `cartUrl` in `src/lib/links.ts` deep-links a domain straight into the WHMCS cart with `domains[]`, and uses `query=` only when WHMCS must check or price the name itself. The full variable and secret list, and the direct-checkout rollout, are in DEPLOYMENT.md.
+
+The search console (`DomainSearch.tsx`) has three candidate button looks behind `?look=beacon|button|command` (`src/lib/look.ts`, `LookSwitcher.tsx`, reviewer-only). Once one is chosen, delete the others.
 
 ### Key Libraries
 
