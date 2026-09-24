@@ -46,6 +46,10 @@ Workers & Pages → the Worker → Settings → Variables and Secrets. These are
 
 Every generated name is filtered to WRLD's TLD list (from the ADAC config in Craft) and checked live before it is shown. `SUGGEST_LIMITER` caps the route at 8 requests per minute per IP.
 
+### Domain wishlist (WRLD Help)
+
+Create and publish a Gleap workflow bot for domain wishlists, then add its public bot ID as the `GLEAP_WISHLIST_BOT_ID` var in `wrangler.jsonc`. The search UI passes the selected domains as `domain_wishlist` custom data before calling `Gleap.startBot`. Until that var is configured, the same button opens the standard WRLD Help flow with the custom data attached.
+
 ### Direct checkout (Stripe → Cloudflare Registrar)
 
 Off by default (`CHECKOUT_MODE=whmcs`). It needs **all** of: `CHECKOUT_MODE=direct|both`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, an `ORDERS` KV binding, `ORDER_WEBHOOK_URL`, the Cloudflare Registrar token, **and matching modes**: a Stripe test key only with the sandbox or a dry run, a live key only with `CF_REGISTRAR_SANDBOX=false` and `REGISTRAR_LIVE=true`. While any of that is missing or mismatched, `/api/checkout` answers 503 and every Register button hands off to the WRLD.host cart, so a half-finished go-live can't take test money for real domains or real money for nothing.

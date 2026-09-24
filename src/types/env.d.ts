@@ -40,6 +40,10 @@ declare global {
     /** Workers AI model override. */
     WORKERS_AI_MODEL?: string;
 
+    // ---- WRLD Help ----------------------------------------------------------
+    /** Live Gleap bot ID for the domain-wishlist workflow. */
+    GLEAP_WISHLIST_BOT_ID?: string;
+
     // ---- Checkout ------------------------------------------------------------
     /** "whmcs" (default) | "direct" | "both". */
     CHECKOUT_MODE?: string;

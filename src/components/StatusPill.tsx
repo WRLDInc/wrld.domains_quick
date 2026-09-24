@@ -15,7 +15,7 @@ const LABELS: Record<PillStatus, string> = {
   available: 'Available',
   likely: 'Looks available',
   premium: 'Premium',
-  taken: 'Taken',
+  taken: 'Unavailable',
   unknown: 'Couldn’t check',
 };
 

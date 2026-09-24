@@ -1,10 +1,12 @@
+import { useState } from 'react';
+import { BookmarkPlus } from 'lucide-react';
 import type { Money, PublicConfig } from '@/types/domains';
 import { Button } from './Button';
 import { StatusPill, type PillStatus } from './StatusPill';
 import { cartUrl } from '@/lib/links';
 import { formatMoney } from '@/lib/api';
 import { directSells } from '@/lib/useConfig';
-import { trackEvent } from '@/lib/gleap';
+import { openDomainWishlist, trackEvent } from '@/lib/gleap';
 
 export interface Row {
   domain: string;
@@ -38,11 +40,37 @@ function DomainName({ domain }: { domain: string }) {
  * summary instead.
  */
 export function SearchResults({ rows, config, onRegister, note }: SearchResultsProps) {
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const selectedDomains = rows.filter((row) => selected.has(row.domain)).map((row) => row.domain);
+
+  function toggle(domain: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(domain)) next.delete(domain);
+      else next.add(domain);
+      return next;
+    });
+  }
+
   return (
     <div>
       <ul className="results">
-        {rows.map((row) => (
-          <li key={row.domain} className="result">
+        {rows.map((row) => {
+          const selectable = row.status === 'available' || row.status === 'likely' || row.status === 'premium';
+          return (
+          <li key={row.domain} className={`result result-${row.status}`}>
+            {selectable ? (
+              <label className="result-select" title={`Select ${row.domain} for your wishlist`}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(row.domain)}
+                  onChange={() => toggle(row.domain)}
+                  aria-label={`Select ${row.domain} for your wishlist`}
+                />
+              </label>
+            ) : (
+              <span className="result-select" aria-hidden="true" />
+            )}
             <DomainName domain={row.domain} />
             <span className="result-price">{row.price ? `${formatMoney(row.price.amount, row.price.currency)}/yr` : ''}</span>
             <StatusPill status={row.status} />
@@ -51,8 +79,21 @@ export function SearchResults({ rows, config, onRegister, note }: SearchResultsP
             </span>
             {row.reason ? <p className="result-reason">{row.reason}</p> : null}
           </li>
-        ))}
+          );
+        })}
       </ul>
+      <div className="result-tools">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={selectedDomains.length === 0}
+          onClick={() => openDomainWishlist(selectedDomains, config.wishlist.botId)}
+        >
+          <BookmarkPlus size={16} strokeWidth={1.5} aria-hidden="true" />
+          Save selected to wishlist
+        </Button>
+        <span className="meta">Select available names, then save them with WRLD Help.</span>
+      </div>
       {note ? <p className="meta results-note">{note}</p> : null}
     </div>
   );
