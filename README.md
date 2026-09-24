@@ -65,7 +65,7 @@ wrld.domains_quick/
 
 ### Prerequisites
 
-- Node.js 18+ and npm/yarn/pnpm
+- Node.js 22.12+ and npm/yarn/pnpm (Vite 8 needs 20.19+ or 22.12+)
 - Cloudflare account
 - WHMCS instance at WRLD.host with API credentials
 
